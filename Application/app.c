@@ -22,6 +22,8 @@
 #include  <app_cfg.h>
 #include  <os.h>
 #include  <os_cfg_app.h>
+//#include <stdlib.h>
+//#include <sstream>
 // biblioteca GUI
 #include "gui.h"
 /* Foi realizada uma alteração na função GUI_DrawImage presente no gui.c
@@ -49,6 +51,8 @@ enum GRAPHIC_OBJS{
 };
 // Proporção de ampliação das imagens inseridas
 #define K 1.5
+#define XX 13
+#define YY 17
 
 /*
 *********************************************************************************************************
@@ -61,14 +65,38 @@ static  CPU_STK  AppStartTaskStk[APP_TASK_START_STK_SIZE];
 // TAREFA DA BOMBA
 static  OS_TCB   AppTaskBOMBATCB;
 static  CPU_STK  AppTaskBOMBAStk[APP_TASK_START_STK_SIZE];
+// TAREFA Desenhar
+static  OS_TCB   AppTaskDESENHARTCB;
+static  CPU_STK  AppTaskDESENHARStk[APP_TASK_START_STK_SIZE];
 // TAREFA DO BOMBERMAN
 static  OS_TCB   AppTaskBOMBERMANTCB;
 static  CPU_STK  AppTaskBOMBERMANStk[APP_TASK_START_STK_SIZE];
 
 // IMAGENS UTILIZADAS NO PROGRAMA
-HBITMAP * fundo, *tijolo, *bomba, *expcentro, *exphorizontal, *expvertical, *bomberman;
-int bombermanX, bombermanY, bombaX, bombaY;
+HBITMAP *fundo, *tijolo, *bomba, *expcentro, *exphorizontal, *expvertical, *bomberman_cima, *bomberman_baixo, *bomberman_dir, *bomberman_esq, *img_inimigo1, *img_inimigo2, *img_inimigo3;
+int bombaX, bombaY;
 BOOL insereBomba;
+bicho bomberman, inimigo1, inimigo2, inimigo3;
+
+OS_SEM Mutex_MATRIZ;
+
+// STRUCT PARA POSICAO
+typedef struct{
+  int x;
+  int y;
+}posicao;
+
+
+//ENUM DE ESTADO
+typedef enum estado {VIVO,MORTO} Estado;
+
+//ENUM DE DIRECAO
+typedef enum direcao {BAIXO,CIMA,DIR,ESQ} Direcao;
+
+//ENUM DE ESPECIA
+typedef enum especie {BOMBERMAN,INIMIGO1,INIMIGO2,INIMIGO3} Especie;
+
+
 
 /*
 *********************************************************************************************************
@@ -84,7 +112,7 @@ BOOL insereBomba;
 8 - *
 *********************************************************************************************************/
 //Labirinto dos obstáculos
-int LABIRINTO[13][17] = { 
+int LABIRINTO[XX][YY] = { 
 	{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
    ,{ 1, 0, 0, 0, 2, 0, 2, 2, 0, 2, 2, 0, 0, 2, 0, 0, 1 }
    ,{ 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 1 }
@@ -132,10 +160,9 @@ extern MSG Msg;
 *********************************************************************************************************
 */
 static  void  App_TaskStart (void  *p_arg);
-//static  void  App_Task1 (void  *p_arg);
 static  void  App_TaskBOMBA (void  *p_arg);
+static  void  App_TaskDESENHAR (void  *p_arg);
 static  void  App_TaskBOMBERMAN (void  *p_arg);
-void verificaPosBomberman(int x, int y);
 LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
 /*
@@ -210,30 +237,24 @@ int  main (void)
 */
 static  void  App_TaskStart (void  *p_arg)
 {
-	int i = 0, j = 0; // Variáveis responsáveis por percorrer toda a matriz LABIRINTO
-	int erroN;
+	posicao posicao_bomberman;
+	posicao posicao_inimigo;
+	Especie especie_inimigo;
+	bool aux=true;
+	int i = 0, j = 0; // Variáveis responsáveis por percorrer toda a matriz LABIRINTO	
+    int erroN;
 	OS_ERR  err_os;
 
+
+	posicao_bomberman.x=1;
+	posicao_bomberman.y=1; //posicao inicial do bomberman
 	erroN = GUI_Init(HandleGUIEvents);	// Inicializa a interface grafica
 
 	if(erroN < 0 ) { // se falhou para carregar a Gui, retorna.
 		printf("\n Erro ao iniciar a Gui (%d)",erroN);
 	}
 
-	//Considerando-se largura de cada coluna igual a 24 e altura igual a 20
-	//CRIAÇÃO DA TELA DE FUNDO DO JOGO
-	fundo = GUI_CreateImage( "fundo.bmp", 612, 390);
-	GUI_DrawImage(fundo, 0, 0, 1200, 800, 1);
 
-	//CRIAÇÃO DOS TIJOLOS
-	tijolo = GUI_CreateImage( "tijolo.bmp", 36, 30);
-	for (i = 0; i < 13; i++){
-		for (j = 0; j < 17; j++){
-			if (LABIRINTO[i][j] == 2){
-				GUI_DrawImage(tijolo, 24*j*K, 20*i*K, 36, 30, 1);
-			}
-		}
-	}
 
 	// CRIAÇÃO DA TAREFA DA BOMBA
 	OSTaskCreate((OS_TCB     *)&AppTaskBOMBATCB,               
@@ -242,6 +263,22 @@ static  void  App_TaskStart (void  *p_arg)
                  (void       *) 0,
                  (OS_PRIO     ) 10,
                  (CPU_STK    *)&AppTaskBOMBAStk[0],
+                 (CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
+                 (CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
+                 (OS_MSG_QTY  ) 0u,
+                 (OS_TICK     ) 0u,
+                 (void       *) 0,
+                 (OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+                 (OS_ERR     *)&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+	// CRIAÇÃO DA TAREFA DESENHAR
+	OSTaskCreate((OS_TCB     *)&AppTaskDESENHARTCB,               
+                 (CPU_CHAR   *)"App StartDESENHAR",
+                 (OS_TASK_PTR ) App_TaskDESENHAR,
+                 (void       *) 0,
+                 (OS_PRIO     ) 10,
+                 (CPU_STK    *)&AppTaskDESENHARStk[0],
                  (CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
                  (CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
                  (OS_MSG_QTY  ) 0u,
@@ -267,10 +304,6 @@ static  void  App_TaskStart (void  *p_arg)
                  (OS_ERR     *)&err_os);
 	APP_TEST_FAULT(err_os, OS_ERR_NONE);
 
-	// POSIÇÃO INICIAL DO BOMBERMAN
-	bombermanX = 1;
-	bombermanY = 1;
-
 	printf("\n Inicio do loop de msg");
     // Loop de mensagens para interface grafica
     while (1){
@@ -280,18 +313,55 @@ static  void  App_TaskStart (void  *p_arg)
 		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_DLY, &err_os);
     }
 	printf("\n fim do loop de msg");
-}
 
-static  void  App_TaskBOMBA (void  *p_arg)
-{
-	OS_ERR  err_os;
+	//CRIAÇÃO DA TELA DE FUNDO DO JOGO
+	fundo = GUI_CreateImage( "fundo.bmp", 612, 390);
+
 	//IMPORTAÇÃO DA IMAGEM DA BOMBA
 	bomba = GUI_CreateImage("bomba.bmp", 36, 30);
+
+	//IMPORTAÇÃO DAS IMAGENS DO BOMBERMAN
+	bomberman_esq = GUI_CreateImage("bomberman_esq.bmp", 36, 30);
+	bomberman_baixo = GUI_CreateImage("bomberman_baixo.bmp", 36, 30);
+	bomberman_cima = GUI_CreateImage("bomberman_cima.bmp", 36, 30);
+	bomberman_dir = GUI_CreateImage("bomberman_dir.bmp", 36, 30);
 
 	//IMPORTAÇÃO DAS IMAGENS RELATIVAS À EXPLOSÃO
 	expcentro = GUI_CreateImage("expcentro.bmp", 36, 30);
 	exphorizontal = GUI_CreateImage("exphorizontal.bmp", 36, 30);
 	expvertical = GUI_CreateImage("expvertical.bmp", 36, 30);
+
+    //IMPORTACAO DOS TIJOLOS
+	tijolo = GUI_CreateImage( "tijolo.bmp", 36, 30);
+
+	//IMPORTACAO DOS INIMIGOS
+	img_inimigo1 = GUI_CreateImage( "inimigo1.bmp", 36, 30);
+	img_inimigo2 = GUI_CreateImage( "inimigo2.bmp", 36, 30);
+	img_inimigo3 = GUI_CreateImage( "inimigo3.bmp", 36, 30);
+
+	//GERA POSICOES E CRIA INIMIGOS
+	for (i=0;i<3;i++){
+		while (aux){
+			posicao_inimigo.x=rand()%XX;
+			posicao_inimigo.y=rand()%YY;
+			OSSemPend (&Mutex_MATRIZ, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait 
+			if ((LABIRINTO[posicao_inimigo.x]==0) && (LABIRINTO[posicao_inimigo.y]==0)){
+				aux=false;
+				if (i==0){bicho inimigo1 (posicao_inimigo,INIMIGO1);}
+				if (i==1){bicho inimigo2 (posicao_inimigo,INIMIGO2);}
+				if (i==2){bicho inimigo3 (posicao_inimigo,INIMIGO3);}
+				OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
+			}
+		}
+	}
+	//CRIA BOMBERMAN
+	bicho bomberman (posicao_bomberman,BOMBERMAN);
+}
+
+static  void  App_TaskBOMBA (void  *p_arg)
+{
+	OS_ERR  err_os;
+	//Considerando-se largura de cada coluna igual a 24 e altura igual a 20
 	
 	//CRIAÇÃO DA BOMBA:
 	if (insereBomba){
@@ -313,49 +383,50 @@ static  void  App_TaskBOMBA (void  *p_arg)
 static  void  App_TaskBOMBERMAN (void  *p_arg)
 {
 	OS_ERR  err_os;
-	//while (1) {
-	//IMPORTAÇÃO DA IMAGEM DO BOMBERMAN
-	bomberman = GUI_CreateImage("bomberman.bmp", 36, 30);
 
-	//CRIAÇÃO DO BOMBERMAN
-	LABIRINTO[bombermanY][bombermanX] = 7;
-	if (LABIRINTO[bombermanY][bombermanX] == 7){
-		GUI_DrawImage(bomberman, 24*bombermanX*K, 20*bombermanY*K, 36, 30, 1);
-	}
-	printf("Bomberman(x,y)=(%d,%d)\n",bombermanX,bombermanY);
 }		
 
-void verificaPosBomberman(int x, int y){
+static  void  App_TaskDESENHA (void  *p_arg)
+{
+	int i,j;
 	OS_ERR  err_os;
+	GUI_DrawImage(fundo, 0, 0, 1200, 800, 1);
+	OSSemPend (&Mutex_MATRIZ, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait 
 
-	if (LABIRINTO[y][x] == 0){
-		//OSTaskDel(&AppTaskBOMBERMANTCB, &err_os);
-		// Se na posição atual foi inserida uma bomba,  
-		if (LABIRINTO[bombermanY][bombermanX] == 6){
-			LABIRINTO[bombermanY][bombermanX] = 6;
+	for (i = 0; i < 13; i++){
+		for (j = 0; j < 17; j++){
+			if (LABIRINTO[i][j] == 2){
+				GUI_DrawImage(tijolo, 24*j*K, 20*i*K, 36, 30, 1);
+			}
+			if (LABIRINTO[i][j] == 7){
+				switch(bomberman.get_direcao()){
+				case DIR: GUI_DrawImage(bomberman_dir, 24*j*K, 20*i*K, 36, 30, 1);
+				case ESQ: GUI_DrawImage(bomberman_esq, 24*j*K, 20*i*K, 36, 30, 1);
+				case BAIXO: GUI_DrawImage(bomberman_baixo, 24*j*K, 20*i*K, 36, 30, 1);
+				case CIMA: GUI_DrawImage(bomberman_cima, 24*j*K, 20*i*K, 36, 30, 1);
+			}
+			}
+			if (LABIRINTO[i][j] == 3){
+				GUI_DrawImage(img_inimigo1, 24*j*K, 20*i*K, 36, 30, 1);
+			}
+			if (LABIRINTO[i][j] == 4){
+				GUI_DrawImage(img_inimigo2, 24*j*K, 20*i*K, 36, 30, 1);
+			}
+			if (LABIRINTO[i][j] == 5){
+				GUI_DrawImage(img_inimigo3, 24*j*K, 20*i*K, 36, 30, 1);
+			}
 		}
-		else{
-			LABIRINTO[bombermanY][bombermanX] = 0;
-		}
-		LABIRINTO[y][x] = 7;
-		bombermanX = x;
-		bombermanY = y;
-		App_TaskBOMBERMAN(0);
 	}
-	else{
-		LABIRINTO[bombermanY][bombermanX] = 7;
-		//App_TaskBOMBERMAN(0);
-	}
-}
+
+	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
+
+}	
+
 
 // Step 4: the Window Procedure
 LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	int i;
-	int k, l;
-	int x = bombermanX;
-	int y = bombermanY;
-
 	switch(msg)
     {
 		case WM_KEYDOWN:
@@ -377,60 +448,23 @@ LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 					break; 
 
 				case VK_SPACE:
-					//Inserir bomba;
-					bombaX = bombermanX;
-					bombaY = bombermanY;
-					LABIRINTO[bombaY][bombaX] = 6;
-					for (k = 0; k < 13; k++){
-						for (l = 0; l < 17; l++){
-							printf("%d \t", LABIRINTO[k][l]);
-						}
-						printf("\n");
-					}
-					insereBomba = TRUE;
-					App_TaskBOMBA(0);
 					break;
 
 				case VK_LEFT:
 					// Insert code here to process the LEFT ARROW key
-					printf("Left\n");
-					x--;
-					printf("Bomberman(x,y)=(%d,%d)\n\n",bombermanX,bombermanY);
-					//App_TaskBOMBERMAN (0);
-					verificaPosBomberman(x,y);
-					for (k = 0; k < 13; k++){
-						for (l = 0; l < 17; l++){
-							printf("%d \t", LABIRINTO[k][l]);
-						}
-						printf("\n");
-					}
+					
 					break;
 
 				case VK_RIGHT:
 					// Insert code here to process the RIGHT ARROW key
-					printf("Right\n");
-					x++;
-					printf("Bomberman(x,y)=(%d,%d)\n\n",bombermanX,bombermanY);
-					//App_TaskBOMBERMAN (0);
-					verificaPosBomberman(x,y);
 					break;
 
 				case VK_UP:
 					// Insert code here to process the UP ARROW key
-					printf("Up\n");
-					y--;
-					printf("Bomberman(x,y)=(%d,%d)\n\n",bombermanX,bombermanY);
-					//App_TaskBOMBERMAN (0);
-					verificaPosBomberman(x,y);
 					break;
 
 				case VK_DOWN:
 					// Insert code here to process the DOWN ARROW key
-					printf("Down\n");
-					y++;
-					printf("Bomberman(x,y)=(%d,%d)\n\n",bombermanX,bombermanY);
-					//App_TaskBOMBERMAN (0);
-					verificaPosBomberman(x,y);
 					break;
 
 				case VK_DELETE:
@@ -510,4 +544,34 @@ LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 			return DefWindowProc(hwnd, msg, wParam, lParam);
 	}
     return 0;
+}
+
+class bicho{
+	posicao posicao_atual;
+	Estado estado_atual;
+	Direcao direcao_atual;
+	Especie especie_atual;
+public:
+	bicho(posicao,Especie);
+	posicao get_posicao() {return posicao_atual;}
+	Estado get_estado() {return estado_atual;}
+	Direcao get_direcao() {return direcao_atual;}
+	Especie get_especie() {return especie_atual;}
+	void set_posicao(posicao pposicao){
+		posicao_atual=pposicao;
+		if (especie_atual==BOMBERMAN) LABIRINTO[posicao_atual.x][posicao_atual.y]=7;
+		if (especie_atual==INIMIGO1) LABIRINTO[posicao_atual.x][posicao_atual.y]=3;
+		if (especie_atual==INIMIGO2) LABIRINTO[posicao_atual.x][posicao_atual.y]=4;
+		if (especie_atual==INIMIGO3) LABIRINTO[posicao_atual.x][posicao_atual.y]=5;
+	}
+	void set_estado(Estado eestado){estado_atual=eestado;}
+	void set_direcao(Direcao ddirecao){direcao_atual=ddirecao;}
+};
+
+bicho::bicho (posicao posicao_inicial, Especie Especie_inicial){
+	OS_ERR  err_os;
+	posicao_atual=posicao_inicial;
+	especie_atual=Especie_inicial;
+	estado_atual=VIVO;
+	direcao_atual=DIR;
 }

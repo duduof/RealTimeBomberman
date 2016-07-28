@@ -1,76 +1,26 @@
-﻿Build started 7/28/2016 1:08:49 AM.
+﻿Build started 7/28/2016 2:32:23 PM.
 Project "Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\GuiApp.vcxproj" on node 2 (Build target(s)).
 ClCompile:
   C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uCOS-III\Ports\Win32\Visual Studio" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uCOS-III\Source" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-Clk\OS\uCOS-III" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-Clk\Source" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-LIB" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-CPU\Win32\Visual Studio" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-CPU" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-FS\Dev\RAMDisk" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-FS\OS\uCOS-III" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-FS\FAT" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-FS\Source" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\Application" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\\" /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TC /analyze- /errorReport:prompt ..\Application\app.c
   app.c
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(79): error C2061: syntax error : identifier 'bomberman'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(79): error C2059: syntax error : ';'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(79): error C2059: syntax error : ','
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(243): error C2065: 'bool' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(243): error C2146: syntax error : missing ';' before identifier 'aux'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(243): error C2065: 'aux' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(243): error C2065: 'true' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(244): error C2143: syntax error : missing ';' before 'type'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(245): error C2143: syntax error : missing ';' before 'type'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(246): error C2275: 'OS_ERR' : illegal use of this type as an expression
-          z:\tempo real\template_bcc 722\ucos-iii\source\os.h(626) : see declaration of 'OS_ERR'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(246): error C2146: syntax error : missing ';' before identifier 'err_os'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(246): error C2065: 'err_os' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(251): error C2065: 'erroN' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(253): error C2065: 'erroN' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(254): error C2065: 'erroN' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(272): error C2065: 'err_os' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(273): error C2065: 'err_os' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(288): error C2065: 'err_os' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(289): error C2065: 'err_os' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(304): error C2065: 'err_os' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(305): error C2065: 'err_os' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(313): error C2065: 'err_os' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(313): warning C4133: 'function' : incompatible types - from 'int *' to 'OS_ERR *'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(343): error C2065: 'i' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(344): error C2065: 'aux' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(347): error C2065: 'err_os' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(347): warning C4133: 'function' : incompatible types - from 'int *' to 'OS_ERR *'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(349): error C2065: 'aux' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(349): error C2065: 'false' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(350): error C2065: 'i' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(350): error C2065: 'bicho' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(350): error C2146: syntax error : missing ';' before identifier 'inimigo1'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(350): warning C4013: 'inimigo1' undefined; assuming extern returning int
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(351): error C2065: 'i' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(351): error C2065: 'bicho' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(351): error C2146: syntax error : missing ';' before identifier 'inimigo2'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(351): warning C4013: 'inimigo2' undefined; assuming extern returning int
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(352): error C2065: 'i' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(352): error C2065: 'bicho' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(352): error C2146: syntax error : missing ';' before identifier 'inimigo3'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(352): warning C4013: 'inimigo3' undefined; assuming extern returning int
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(353): error C2065: 'err_os' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(353): warning C4133: 'function' : incompatible types - from 'int *' to 'OS_ERR *'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(358): error C2065: 'bicho' : undeclared identifier
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(358): error C2146: syntax error : missing ';' before identifier 'bomberman'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(358): warning C4013: 'bomberman' undefined; assuming extern returning int
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(369): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(374): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(375): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(376): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(377): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(378): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(399): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(402): error C2224: left of '.get_direcao' must have struct/union type
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(403): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(404): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(405): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(406): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(410): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(413): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(416): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(549): error C2061: syntax error : identifier 'bicho'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(549): error C2059: syntax error : ';'
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(549): error C2449: found '{' at file scope (missing function header?)
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(569): error C2059: syntax error : '}'
-Done Building Project "Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\GuiApp.vcxproj" (Build target(s)) -- FAILED.
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(389): warning C4101: 'err_os' : unreferenced local variable
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(412): warning C4101: 'err_os' : unreferenced local variable
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(429): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(432): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(433): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(434): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(435): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(438): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(440): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(442): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+Link:
+  C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\Debug\GuiApp.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\Debug\GuiApp.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\Debug\GuiApp.lib" /MACHINE:X86 Debug\app.obj
+  Debug\fs_app.obj
+  Debug\gui.obj
+  "..\uC-FS_LIB\uC-FS-V4.lib"
+  GuiApp.vcxproj -> Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\Debug\GuiApp.exe
+Done Building Project "Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\GuiApp.vcxproj" (Build target(s)).
 
-Build FAILED.
+Build succeeded.
 
-Time Elapsed 00:00:03.32
+Time Elapsed 00:00:03.69

@@ -93,7 +93,7 @@ OS_SEM Mutex_MATRIZ;
 typedef struct{
   int x;
   int y;
-}posicao;
+}Posicao;
 
 
 //ENUM DE ESTADO
@@ -107,8 +107,7 @@ int codigo[4] = {cod_inimigo1,cod_inimigo2,cod_inimigo3,cod_bomberman}; //O NUME
 
 //STRUCT PARA BICHOS
 typedef struct{
-	int x;
-	int y;
+	Posicao posicao;
 	Estado estado;
 	Direcao direcao;
 	int especie; //especie pode ser 1 para inimigo1,2 para 2, 3 para 3, e 4 para bomberman
@@ -130,6 +129,9 @@ bicho inimigo[3],bomberman;
 6 - bomba
 7 - bomberman
 8 - *
+9 - explosao bomba vertical
+10 - explosao bomba centro
+11 - explosao bomba horizonte
 *********************************************************************************************************/
 //Labirinto dos obstáculos
 int LABIRINTO[XX][YY] = { 
@@ -187,6 +189,7 @@ LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
 //DECLARACAO DAS FUNCOES CRIADAS
 void atualizaPosicoes(bicho bbicho);
+void anda(bicho *bbicho, Direcao ddirecao);
 
 /*
 *********************************************************************************************************
@@ -259,7 +262,7 @@ int  main (void)
 */
 static  void  App_TaskStart (void  *p_arg)
 {
-	posicao posicao_aux;
+	Posicao posicao_aux;
 	int aux=1;
 	int i = 0, j = 0; // Variáveis responsáveis por percorrer toda a matriz LABIRINTO	
     int erroN;
@@ -293,8 +296,10 @@ static  void  App_TaskStart (void  *p_arg)
 
 
 	//CRIA BOMBERMAN
-	bomberman.x=1;bomberman.y=1;bomberman.direcao=DIR;bomberman.estado=VIVO;bomberman.especie=4;
+	bomberman.posicao.x=1;bomberman.posicao.y=1;bomberman.direcao=DIR;bomberman.estado=VIVO;bomberman.especie=4;
+	OSSemPend (&Mutex_MATRIZ, 0, OS_OPT_PEND_BLOCKING, 0, &err_os);//wait
 	atualizaPosicoes(bomberman);
+	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
 	//GERA POSICOES E CRIA INIMIGOS
 	for (i=0;i<3;i++){
 		while (aux){
@@ -304,14 +309,14 @@ static  void  App_TaskStart (void  *p_arg)
 			if ((LABIRINTO[posicao_aux.x][posicao_aux.y]==0)){		
 				aux=0;
 				//CRIA O INIMIGO I
-				inimigo[i].x=posicao_aux.x;
-				inimigo[i].y=posicao_aux.y;
+				inimigo[i].posicao.x=posicao_aux.x;
+				inimigo[i].posicao.y=posicao_aux.y;
 				inimigo[i].direcao=DIR;
 				inimigo[i].estado=VIVO;	
 				inimigo[i].especie=i+1;
 			}
-			OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
 			atualizaPosicoes(inimigo[i]);
+			OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal			
 		}
 		aux=1;
 	}
@@ -388,6 +393,7 @@ static  void  App_TaskBOMBA (void  *p_arg)
 {
 	OS_ERR  err_os;
 
+
 	//Considerando-se largura de cada coluna igual a 24 e altura igual a 20
 	//
 	////CRIAÇÃO DA BOMBA:
@@ -429,6 +435,7 @@ static  void  App_TaskDESENHAR (void  *p_arg)
 			case 2 :GUI_DrawImage(tijolo, 24*j*K, 20*i*K, 36, 30, 1);
 				break;
 			case cod_bomberman:{
+				//Verifica a direcao em que o bomberman esta andando, switch case deu problema ???
 				if (bomberman.direcao==DIR){GUI_DrawImage(bomberman_dir, 24*j*K, 20*i*K, 36, 30, 1);}
 				if (bomberman.direcao==ESQ){GUI_DrawImage(bomberman_esq, 24*j*K, 20*i*K, 36, 30, 1);}
 				if (bomberman.direcao==BAIXO){GUI_DrawImage(bomberman_baixo, 24*j*K, 20*i*K, 36, 30, 1);}
@@ -441,29 +448,19 @@ static  void  App_TaskDESENHAR (void  *p_arg)
 				break;
 			case cod_inimigo3: GUI_DrawImage(img_inimigo3, 24*j*K, 20*i*K, 36, 30, 1);
 				break;
-			}/*
-			if ( LABIRINTO[i][j] == 2){
-				GUI_DrawImage(tijolo, 24*j*K, 20*i*K, 36, 30, 1);
+			case 6: GUI_DrawImage(bomba, 24*j*K, 20*i*K, 36, 30, 1);
+				break;
+			case 9: GUI_DrawImage(expvertical, 24*j*K, 20*i*K, 36, 30, 1);//CENTRO EXPLOSAO	
+				break;
+			case 10: GUI_DrawImage(expcentro, 24*j*K, 20*i*K, 36, 30, 1);//CENTRO EXPLOSAO	
+				break;
+		 case 11: GUI_DrawImage(exphorizontal, 24*j*K, 20*i*K, 36, 30, 1);//CENTRO EXPLOSAO	
+				break;
 			}
-			if (LABIRINTO[i][j] == cod_bomberman){
-				if (bomberman.direcao==DIR){GUI_DrawImage(bomberman_dir, 24*j*K, 20*i*K, 36, 30, 1);}
-				if (bomberman.direcao==ESQ){GUI_DrawImage(bomberman_esq, 24*j*K, 20*i*K, 36, 30, 1);}
-				if (bomberman.direcao==BAIXO){GUI_DrawImage(bomberman_baixo, 24*j*K, 20*i*K, 36, 30, 1);}
-				if (bomberman.direcao==CIMA){GUI_DrawImage(bomberman_cima, 24*j*K, 20*i*K, 36, 30, 1);}
-			}
-			if (LABIRINTO[i][j] == cod_inimigo1){
-				GUI_DrawImage(img_inimigo1, 24*j*K, 20*i*K, 36, 30, 1);
-			}
-			if (LABIRINTO[i][j] == cod_inimigo1){
-				GUI_DrawImage(img_inimigo2, 24*j*K, 20*i*K, 36, 30, 1);
-			}
-			if (LABIRINTO[i][j] == 5){
-				GUI_DrawImage(img_inimigo3, 24*j*K, 20*i*K, 36, 30, 1);
-			}*/
 		}
 	}
 	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
-	OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_DLY, &err_os);
+	OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_DLY, &err_os);
 	}
 	
 	
@@ -473,22 +470,40 @@ static  void  App_TaskDESENHAR (void  *p_arg)
 
 //FUNCOES 
 
-//ATUALIZA O LABIRINTO DE ACORDO COM A POSICAO DOS BICHOS
+//ATUALIZA O LABIRINTO DE ACORDO COM A POSICAO DOS BICHOS, LEMBRAR DE DAR WAIT NO MUTEX ANTES DE CHAMAR
 void atualizaPosicoes(bicho bbicho){
-	OS_ERR  err_os;
-	OSSemPend (&Mutex_MATRIZ, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait
 	if (bbicho.estado==VIVO)
-		LABIRINTO[bbicho.x][bbicho.y]=codigo[((bbicho.especie)-1)];
+		LABIRINTO[bbicho.posicao.x][bbicho.posicao.y]=codigo[((bbicho.especie)-1)];
 	else
-		LABIRINTO[bbicho.x][bbicho.y]=0;
-	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
+		LABIRINTO[bbicho.posicao.x][bbicho.posicao.y]=0;
+}
+
+//FUNCAO ANDA, VERIFICA SE PODE MOVER NA POSICAO DESEJADA E CASO POSITIVO, MUDA A POSICAO
+void anda(bicho *bbicho, Direcao ddirecao){
+	Posicao nova_posicao=(*bbicho).posicao;
+	OS_ERR  err_os;
+	(*bbicho).direcao=ddirecao;
+	switch (ddirecao){
+	case DIR: nova_posicao.y++; break;
+	case ESQ: nova_posicao.y--; break;
+	case CIMA: nova_posicao.x--; break;
+	case BAIXO: nova_posicao.x++; break;
+	}
+	OSSemPend (&Mutex_MATRIZ, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait
+	if (LABIRINTO[nova_posicao.x][nova_posicao.y]==0){
+		LABIRINTO[(*bbicho).posicao.x][(*bbicho).posicao.y]=0; //LIBERA NA MATRIZ A POSICAO ATUAL DO BICHO
+		(*bbicho).posicao=nova_posicao; //ATUALIZA A POSICAO DO BICHO
+		atualizaPosicoes(*bbicho); //OCUPA POSICAO CORRESPONDENTE DA MATRIZ
+	}
+	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os);
+
 }
 
 
 // Step 4: the Window Procedure
 LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
-	int i;
+	int i,num_bombas;
 	switch(msg)
     {
 		case WM_KEYDOWN:
@@ -510,25 +525,24 @@ LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 					break; 
 
 				case VK_SPACE:
+
 					break;
 
 				case VK_LEFT:
-					// Insert code here to process the LEFT ARROW key
-					
+					anda(&bomberman, ESQ);
 					break;
 
 				case VK_RIGHT:
-					// Insert code here to process the RIGHT ARROW key
-					bomberman.x++;
-					atualizaPosicoes(bomberman);
+					anda(&bomberman, DIR);
+
 					break;
 
 				case VK_UP:
-					// Insert code here to process the UP ARROW key
+					anda(&bomberman, CIMA);
 					break;
 
 				case VK_DOWN:
-					// Insert code here to process the DOWN ARROW key
+					anda(&bomberman, BAIXO);
 					break;
 
 				case VK_DELETE:

@@ -209,9 +209,9 @@ int GUI_Init(WNDPROC customWinProc)
     hwnd = CreateWindowEx(
         WS_EX_CLIENTEDGE,
         "Trabalho BCC722",
-        "The title of my window",
+        "BOMBERMAN",
         WS_OVERLAPPEDWINDOW | SS_BITMAP,
-        CW_USEDEFAULT, CW_USEDEFAULT, 800, 600,
+        CW_USEDEFAULT, CW_USEDEFAULT, 630, 430,
         NULL, NULL, NULL, NULL);
 
     if(hwnd == NULL)

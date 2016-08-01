@@ -471,7 +471,7 @@ static  void  App_TaskBOMBA (void  *p_arg)
 	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
 	num_bombas--;
 	bomba_ativa[num_bomba_atual]=0;
-	//OSTaskDel(&AppTaskBOMBATCB[num_bomba_atual],&err_os);
+	OSTaskDel(&AppTaskBOMBATCB[num_bomba_atual],&err_os);
 	//OSTaskDel((OS_TCB *)0, &err_os);
 }
 
@@ -660,6 +660,11 @@ void gameover(){
 	int i;
 	OS_ERR err_os;
 
+	for (i=0;i<max_bombas;i++){
+		if (bomba_ativa[i]==1){
+			OSTaskDel(&AppTaskBOMBATCB[i],&err_os);
+		}
+	}
 
 	//DELETA TASKS	
 	OSTaskDel(&AppTaskDESENHARTCB,&err_os);
@@ -679,6 +684,8 @@ void inicia_jogo(){
 	int i,aux=1;
 	Posicao posicao_aux;
 	OS_ERR err_os;
+
+	bomba_ativa[0]=0;bomba_ativa[1]=0;bomba_ativa[2]=0; //ZERA BOMBAS ATIVAS
 
 
 
@@ -705,8 +712,8 @@ void inicia_jogo(){
 	//GERA POSICOES E CRIA INIMIGOS
 	for (i=0;i<3;i++){
 		while (aux){
-			posicao_aux.x=rand()%XX;
-			posicao_aux.y=rand()%YY;
+			posicao_aux.x=rand()%(XX-4)+4;
+			posicao_aux.y=rand()%(YY-4)+4;
 			if ((LABIRINTO[posicao_aux.x][posicao_aux.y]==0)){		
 				aux=0;
 				//CRIA O INIMIGO I
@@ -807,6 +814,9 @@ LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 						(void       *) 0,
 						(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
 						(OS_ERR     *)&err_os);
+					}else
+					{
+						num_bombas--;
 					}
 				}
 			}

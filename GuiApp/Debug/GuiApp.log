@@ -1,30 +1,28 @@
-﻿Build started 8/1/2016 2:54:54 PM.
+﻿Build started 8/1/2016 5:20:46 PM.
 Project "Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\GuiApp.vcxproj" on node 2 (Build target(s)).
 ClCompile:
   C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\CL.exe /c /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uCOS-III\Ports\Win32\Visual Studio" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uCOS-III\Source" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-Clk\OS\uCOS-III" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-Clk\Source" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-LIB" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-CPU\Win32\Visual Studio" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-CPU" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-FS\Dev\RAMDisk" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-FS\OS\uCOS-III" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-FS\FAT" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\..\..\..\..\..\uC-FS\Source" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\Application" /I"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\..\\" /ZI /nologo /W3 /WX- /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc110.pdb" /Gd /TC /analyze- /errorReport:prompt ..\Application\app.c
   app.c
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(308): warning C4244: 'function' : conversion from 'time_t' to 'unsigned int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(297): warning C4101: 'posicao_aux' : unreferenced local variable
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(423): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(427): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(428): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(429): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(430): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(433): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(435): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(437): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(441): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(443): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(445): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(447): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(449): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(451): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(526): warning C4101: 'k' : unreferenced local variable
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(526): warning C4101: 'm' : unreferenced local variable
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(525): warning C4101: 'aux' : unreferenced local variable
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(591): warning C4244: 'function' : conversion from 'time_t' to 'unsigned int', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(605): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(630): warning C4715: 'melhor_caminho' : not all control paths return a value
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(312): warning C4244: 'function' : conversion from 'time_t' to 'unsigned int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(298): warning C4101: 'posicao_aux' : unreferenced local variable
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(492): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(496): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(497): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(498): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(499): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(502): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(504): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(506): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(510): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(512): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(514): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(516): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(518): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(520): warning C4244: 'function' : conversion from 'double' to 'int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(597): warning C4244: 'function' : conversion from 'time_t' to 'unsigned int', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(611): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(640): warning C4101: 'i' : unreferenced local variable
+z:\tempo real\template_bcc 722\evalboards\microsoft\windows\visual studio 2010\win32guiapp\application\app.c(636): warning C4715: 'melhor_caminho' : not all control paths return a value
 Link:
   C:\Program Files\Microsoft Visual Studio 11.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\Debug\GuiApp.exe" /INCREMENTAL /NOLOGO kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\Debug\GuiApp.pdb" /SUBSYSTEM:CONSOLE /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windows\Visual Studio 2010\Win32GUIApp\GuiApp\Debug\GuiApp.lib" /MACHINE:X86 Debug\app.obj
   Debug\fs_app.obj
@@ -35,4 +33,4 @@ Done Building Project "Z:\Tempo Real\Template_BCC 722\EvalBoards\Microsoft\Windo
 
 Build succeeded.
 
-Time Elapsed 00:00:05.52
+Time Elapsed 00:00:04.68

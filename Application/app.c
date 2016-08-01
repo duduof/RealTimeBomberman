@@ -126,7 +126,7 @@ typedef struct{
 bicho inimigo[3],bomberman;
 
 //NUMERO ATUAL DE BOMBAS E NUMERO MAXIMO DE BOMBAS
-int num_bombas, max_bombas,jogo_rolando=0;
+int num_bombas, max_bombas,jogo_rolando=0,bomba_ativa[3];
 
 
 /*
@@ -301,6 +301,9 @@ static  void  App_TaskStart (void  *p_arg)
 	int erroN;
 	OS_ERR  err_os;
 
+	//INICIALIZA SEMAFOROS
+	OSSemCreate (&Mutex_MATRIZ, "mutex_matriz", 1, &err_os); //Cria mutex para acessar matriz
+	OSSemCreate (&Mutex_bombas, "mutex_bombas", 1, &err_os); //Cria mutex para acessar variavel de num de bombas
 	OSSemCreate (&MORTE, "morte", 1, &err_os); //Cria semaforo para quando morre algum bicho
 
 
@@ -347,6 +350,22 @@ static  void  App_TaskStart (void  *p_arg)
 
 	GUI_DrawImage(img_inicio, 0, 0, 1200, 800, 1); //DESENHA TELA DE INICIO
 
+		// CRIAÇÃO DA TAREFA DO BOMBERMAN
+	OSTaskCreate((OS_TCB     *)&AppTaskBOMBERMANTCB,                
+		(CPU_CHAR   *)"App StartBOMBERMAN",
+		(OS_TASK_PTR ) App_TaskBOMBERMAN,
+		(void       *) 0,
+		(OS_PRIO     ) 6,
+		(CPU_STK    *)&AppTaskBOMBERMANStk[0],
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
+		(OS_MSG_QTY  ) 0u,
+		(OS_TICK     ) 0u,
+		(void       *) 0,
+		(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+		(OS_ERR     *)&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
 	printf("\n Inicio do loop de msg");
 	// Loop de mensagens para interface grafica
 	while (1){
@@ -385,9 +404,8 @@ static  void  App_TaskBOMBA (void  *p_arg)
 	OS_ERR  err_os;
 	bbomba=bomberman.posicao;
 	LABIRINTO[bbomba.x][bbomba.y] = 6;
-
-	num_bomba_atual=num_bombas;
-	OSSemPost (&Mutex_bombas,OS_OPT_POST_1, &err_os); //signal
+	num_bomba_atual=num_bombas-1;
+	bomba_ativa[num_bomba_atual]=1;
 
 	OSTimeDlyHMSM(0,0,3,0,OS_OPT_TIME_DLY, &err_os);
 
@@ -433,6 +451,10 @@ static  void  App_TaskBOMBA (void  *p_arg)
 			LABIRINTO[bbomba.x][bbomba.y+i]=11;} //ATRIBUI DESENHO DE EXPLOSAO HORIZONTAL A POSICAO
 	}
 	LABIRINTO[bbomba.x][bbomba.y]=10; //ATRIBUI DESENHO DE CENTRO DE EXPLOSAO A POSICAO
+	if (bbomba.x==bomberman.posicao.x && bbomba.y == bomberman.posicao.y){
+		bomberman.estado=MORTO;
+		OSSemPost (&MORTE,OS_OPT_POST_1, &err_os); //signal
+	}
 	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
 	//FINALIZA EXPLOSAO
 	OSTimeDlyHMSM(0,0,0,700,OS_OPT_TIME_DLY, &err_os);
@@ -447,10 +469,10 @@ static  void  App_TaskBOMBA (void  *p_arg)
 			LABIRINTO[bbomba.x][bbomba.y+i]=0;} //ATRIBUI DESENHO DE EXPLOSAO HORIZONTAL A POSICAO
 	}
 	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
-	OSSemPend (&Mutex_bombas, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait 
 	num_bombas--;
-	OSSemPost (&Mutex_bombas,OS_OPT_POST_1, &err_os); //signal
-	OSTaskDel(&AppTaskBOMBATCB[num_bomba_atual-1], &err_os);
+	bomba_ativa[num_bomba_atual]=0;
+	//OSTaskDel(&AppTaskBOMBATCB[num_bomba_atual],&err_os);
+	//OSTaskDel((OS_TCB *)0, &err_os);
 }
 
 static  void  App_TaskBOMBERMAN (void  *p_arg)
@@ -458,21 +480,19 @@ static  void  App_TaskBOMBERMAN (void  *p_arg)
 	OS_ERR  err_os;
 	while (1){
 		if (jogo_rolando){
-		OSSemPend (&MORTE, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait
-		if (bomberman.estado == MORTO){
-			jogo_rolando=0;
-			GUI_DrawImage(img_gameover, 0, 0, 1200, 800, 1); //DESENHA IMAGEM DE GAMEOVER
-			gameover();	//ENCERRA TASKS
-			OSTaskDel(&AppTaskBOMBERMANTCB,&err_os);
+			OSSemPend (&MORTE, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait
+			if (bomberman.estado == MORTO){
+				jogo_rolando=0;
+				GUI_DrawImage(img_gameover, 0, 0, 1200, 800, 1); //DESENHA IMAGEM DE GAMEOVER
+				gameover();	//ENCERRA TASKS
+			}
+			if (inimigo[0].estado == MORTO && inimigo[1].estado == MORTO && inimigo[2].estado == MORTO){
+				jogo_rolando=0;
+				GUI_DrawImage(img_win, 0, 0, 1200, 800, 1); //DESENHA IMAGEM DE VITORIA
+				gameover();	//ENCERRA TASKS
+			}
 		}
-		if (inimigo[0].estado == MORTO && inimigo[1].estado == MORTO && inimigo[2].estado == MORTO){
-			jogo_rolando=0;
-			GUI_DrawImage(img_win, 0, 0, 1200, 800, 1); //DESENHA IMAGEM DE VITORIA
-			gameover();	//ENCERRA TASKS
-			OSTaskDel(&AppTaskBOMBERMANTCB,&err_os);
-		}
-		}
-
+		OSTimeDlyHMSM(0,0,0,200,OS_OPT_TIME_DLY, &err_os);
 	}
 }
 
@@ -639,16 +659,17 @@ Direcao melhor_caminho(bicho bbicho, Posicao anterior){
 void gameover(){
 	int i;
 	OS_ERR err_os;
-	
+
 
 	//DELETA TASKS	
 	OSTaskDel(&AppTaskDESENHARTCB,&err_os);
 	OSTaskDel(&AppTaskINIMIGOTCB,&err_os);
-	
+
 	//DELETA SEMAFOROS
-	OSSemDel(&Mutex_MATRIZ,OS_OPT_DEL_ALWAYS, &err_os);
-	OSSemDel(&Mutex_bombas,OS_OPT_DEL_ALWAYS, &err_os);
-	
+	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
+	OSSemPost (&Mutex_bombas,OS_OPT_POST_1, &err_os); //signal
+
+
 }
 
 
@@ -659,11 +680,8 @@ void inicia_jogo(){
 	Posicao posicao_aux;
 	OS_ERR err_os;
 
-	//INICIALIZA SEMAFOROS
-	OSSemCreate (&Mutex_MATRIZ, "mutex_matriz", 1, &err_os); //Cria mutex para acessar matriz
-	OSSemCreate (&Mutex_bombas, "mutex_bombas", 1, &err_os); //Cria mutex para acessar variavel de num de bombas
 
-	
+
 	memcpy(LABIRINTO, LABIRINTO2, sizeof(LABIRINTO)); //VOLTA AO ESTADO ORIGINAL DE LABIRINTO
 	num_bombas = 0; //NUM DE BOMBAS ATUAL
 	max_bombas = 1; //NUM MAXIMO DE BOMBAS, PODE IR ATE 3 (PELA TASK BOMBA)
@@ -736,21 +754,7 @@ void inicia_jogo(){
 		(OS_ERR     *)&err_os);
 	APP_TEST_FAULT(err_os, OS_ERR_NONE);
 
-	// CRIAÇÃO DA TAREFA DO BOMBERMAN
-	OSTaskCreate((OS_TCB     *)&AppTaskBOMBERMANTCB,                
-		(CPU_CHAR   *)"App StartBOMBERMAN",
-		(OS_TASK_PTR ) App_TaskBOMBERMAN,
-		(void       *) 0,
-		(OS_PRIO     ) 10,
-		(CPU_STK    *)&AppTaskBOMBERMANStk[0],
-		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
-		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
-		(OS_MSG_QTY  ) 0u,
-		(OS_TICK     ) 0u,
-		(void       *) 0,
-		(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-		(OS_ERR     *)&err_os);
-	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
 }
 
 //##########################################################
@@ -760,7 +764,7 @@ void inicia_jogo(){
 LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	OS_ERR  err_os;
-	int i;
+	int i,k;
 	switch(msg)
 	{
 	case WM_KEYDOWN:
@@ -784,47 +788,48 @@ LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 			break; 
 
 		case VK_SPACE:
-			if (jogo_rolando==1){
-			OSSemPend (&Mutex_bombas, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait 
- 			if (num_bombas<max_bombas){
-				// CRIAÇÃO DA TAREFA DA BOMBA
-				OSTaskCreate((OS_TCB     *)&AppTaskBOMBATCB[num_bombas],               
-					(CPU_CHAR   *)"App StartBOMBA",
-					(OS_TASK_PTR ) App_TaskBOMBA,
-					(void       *) &num_bombas,
-					(OS_PRIO     ) (15+num_bombas),
-					(CPU_STK    *)&AppTaskBOMBAStk[num_bombas][0],
-					(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
-					(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
-					(OS_MSG_QTY  ) 0u,
-					(OS_TICK     ) 0u,
-					(void       *) 0,
-					(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-					(OS_ERR     *)&err_os);
-				num_bombas++;
-			}
-			else{OSSemPost (&Mutex_bombas,OS_OPT_POST_1, &err_os);} //signal
+			if (jogo_rolando==1){	
+				if (num_bombas<max_bombas){
+					num_bombas++;
+					k=num_bombas-1;
+					if (bomba_ativa[k]==0){
+					// CRIAÇÃO DA TAREFA DA BOMBA
+					OSTaskCreate((OS_TCB     *)&AppTaskBOMBATCB[k],               
+						(CPU_CHAR   *)"App StartBOMBA",
+						(OS_TASK_PTR ) App_TaskBOMBA,
+						(void       *) &k,
+						(OS_PRIO     ) (15+k),
+						(CPU_STK    *)&AppTaskBOMBAStk[k][0],
+						(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
+						(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
+						(OS_MSG_QTY  ) 0u,
+						(OS_TICK     ) 0u,
+						(void       *) 0,
+						(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+						(OS_ERR     *)&err_os);
+					}
+				}
 			}
 			break;
 
 		case VK_LEFT:
 			if (jogo_rolando==1){
-			anda(&bomberman, ESQ);
+				anda(&bomberman, ESQ);
 			}
 			break;
 		case VK_RIGHT:
 			if (jogo_rolando==1){
-			anda(&bomberman, DIR);
+				anda(&bomberman, DIR);
 			}
 			break;
 		case VK_UP:
 			if (jogo_rolando==1){
-			anda(&bomberman, CIMA);
+				anda(&bomberman, CIMA);
 			}
 			break;
 		case VK_DOWN:
 			if (jogo_rolando==1){
-			anda(&bomberman, BAIXO);
+				anda(&bomberman, BAIXO);
 			}
 			break;
 		case VK_DELETE:

@@ -57,7 +57,7 @@
 *********************************************************************************************************
 */
 
-#define  APP_TASK_START_STK_SIZE                       1024
+#define  APP_TASK_START_STK_SIZE                       2047
 #define  CLK_OS_CFG_TASK_STK_SIZE                       512
 
 

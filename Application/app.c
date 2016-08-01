@@ -88,7 +88,9 @@ static  OS_TCB   AppTaskBOMBERMANTCB;
 static  CPU_STK  AppTaskBOMBERMANStk[APP_TASK_START_STK_SIZE];
 
 // IMAGENS UTILIZADAS NO PROGRAMA
-HBITMAP *fundo, *tijolo, *bomba, *expcentro, *exphorizontal, *expvertical, *bomberman_bomba, *bomberman_cima, *bomberman_baixo, *bomberman_dir, *bomberman_esq, *img_inimigo1, *img_inimigo2, *img_inimigo3;
+HBITMAP *fundo, *tijolo, *bomba, *expcentro, *exphorizontal, *expvertical, *bomberman_bomba, *bomberman_cima,
+	*bomberman_baixo, *bomberman_dir, *bomberman_esq, *img_inimigo1, *img_inimigo2, *img_inimigo3, *img_win, 
+	*img_gameover, *img_inicio, *img_bonus;
 
 
 // SEMAFOROS
@@ -123,7 +125,7 @@ typedef struct{
 bicho inimigo[3],bomberman;
 
 //NUMERO ATUAL DE BOMBAS E NUMERO MAXIMO DE BOMBAS
-int num_bombas, max_bombas;
+int num_bombas, max_bombas,jogo_rolando=0;
 
 
 /*
@@ -141,7 +143,7 @@ LABIRINTOS - CODIFICAÇÃO DOS OBJETOS
 9 - explosao bomba vertical
 10 - explosao bomba centro
 11 - explosao bomba horizontal
-12 - bomberman e bomba juntos
+12 - bonus bombas
 *********************************************************************************************************/
 //Labirinto dos obstáculos
 int LABIRINTO[XX][YY] = { 
@@ -157,8 +159,23 @@ int LABIRINTO[XX][YY] = {
 	,{ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1 }
 	,{ 1, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 1, 0, 1 }
 	,{ 1, 2, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1 }
-	,{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
-};
+	,{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }};
+
+int LABIRINTO2[XX][YY] = { 
+	{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
+	,{ 1, 0, 0, 0, 2, 0, 2, 2, 0, 2, 2, 0, 0, 2, 0, 0, 1 }
+	,{ 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 1 }
+	,{ 1, 0, 2, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 1 }
+	,{ 1, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1 }
+	,{ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 2, 0, 1 }
+	,{ 1, 0, 1, 0, 1, 0, 1, 2, 1, 0, 1, 0, 1, 2, 1, 0, 1 }
+	,{ 1, 0, 2, 0, 0, 2, 2, 2, 2, 0, 0, 0, 0, 0, 0, 0, 1 }
+	,{ 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 1, 2, 1 }
+	,{ 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 1 }
+	,{ 1, 2, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 1, 0, 1 }
+	,{ 1, 2, 0, 0, 0, 0, 2, 2, 0, 0, 0, 0, 0, 0, 0, 0, 1 }
+	,{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }};
+
 
 /*
 *********************************************************************************************************
@@ -203,6 +220,9 @@ void atualiza_posicoes(bicho bbicho);
 void anda(bicho *bbicho, Direcao ddirecao);
 void explosao(Posicao bbomba);
 int testa_explosao(int pos, int aux);
+void gameover();
+void win();
+void inicia_jogo();
 Direcao melhor_caminho(bicho bbicho, Posicao anterior);
 /*
 *********************************************************************************************************
@@ -279,20 +299,29 @@ static  void  App_TaskStart (void  *p_arg)
 	int i = 0, j = 0; // Variáveis responsáveis por percorrer toda a matriz LABIRINTO	
 	int erroN;
 	OS_ERR  err_os;
+
+	erroN = GUI_Init(HandleGUIEvents);	// Inicializa a interface grafica
+
+	if(erroN < 0 ) { // se falhou para carregar a Gui, retorna.
+		printf("\n Erro ao iniciar a Gui (%d)",erroN);
+	}
 	srand(time(NULL));
 
-	//Parametros iniciais da bomba
-	num_bombas = 0;
-	max_bombas = 1;
-
 	OSSemCreate (&Mutex_MATRIZ, "mutex_matriz", 1, &err_os); //Cria mutex para acessar matriz
+	OSSemCreate (&MORTE, "morte", 1, &err_os); //Cria semaforo para quando morre algum bicho
 
 	//CRIAÇÃO DA TELA DE FUNDO DO JOGO
 	fundo = GUI_CreateImage( "fundo.bmp", 612, 390);
 
+	//IMAGENS INICIAIS E FINAIS
+	img_gameover = GUI_CreateImage( "gameover.bmp", 612, 390);
+	img_inicio = GUI_CreateImage( "inicio.bmp", 612, 390);
+	img_win = GUI_CreateImage( "win.bmp", 612, 390);
+
 	//IMPORTAÇÃO DA IMAGEM DA BOMBA
 	bomba = GUI_CreateImage("bomba.bmp", 36, 30);
 	bomberman_bomba = GUI_CreateImage("bomberman_bomba.bmp", 36, 30);
+	img_bonus = GUI_CreateImage("bombas_bonus.bmp", 36, 30);
 
 	//IMPORTAÇÃO DAS IMAGENS DO BOMBERMAN
 	bomberman_esq = GUI_CreateImage("bomberman_esq.bmp", 36, 30);
@@ -313,91 +342,7 @@ static  void  App_TaskStart (void  *p_arg)
 	img_inimigo2 = GUI_CreateImage( "Inimigo2.bmp", 36, 30);
 	img_inimigo3 = GUI_CreateImage( "Inimigo3.bmp", 36, 30);
 
-
-	//CRIA BOMBERMAN
-	bomberman.posicao.x=1;bomberman.posicao.y=1;bomberman.direcao=DIR;bomberman.estado=VIVO;bomberman.especie=4;
-	OSSemPend (&Mutex_MATRIZ, 0, OS_OPT_PEND_BLOCKING, 0, &err_os);//wait
-	atualiza_posicoes(bomberman);
-	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
-	//GERA POSICOES E CRIA INIMIGOS
-	for (i=0;i<3;i++){
-		while (aux){
-			posicao_aux.x=rand()%XX;
-			posicao_aux.y=rand()%YY;
-			OSSemPend (&Mutex_MATRIZ, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait 
-			if ((LABIRINTO[posicao_aux.x][posicao_aux.y]==0)){		
-				aux=0;
-				//CRIA O INIMIGO I
-				inimigo[i].posicao.x=posicao_aux.x;
-				inimigo[i].posicao.y=posicao_aux.y;
-				inimigo[i].direcao=DIR;
-				inimigo[i].estado=VIVO;	
-				inimigo[i].especie=i+1;
-			}
-			atualiza_posicoes(inimigo[i]);
-			OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal			
-		}
-		aux=1;
-	}
-
-	erroN = GUI_Init(HandleGUIEvents);	// Inicializa a interface grafica
-
-	if(erroN < 0 ) { // se falhou para carregar a Gui, retorna.
-		printf("\n Erro ao iniciar a Gui (%d)",erroN);
-	}
-
-
-
-	// CRIAÇÃO DA TAREFA INIMIGO
-	OSTaskCreate((OS_TCB     *)&AppTaskINIMIGOTCB,               
-		(CPU_CHAR   *)"App StartINIMIGO",
-		(OS_TASK_PTR ) App_TaskINIMIGO,
-		(void       *) 0,
-		(OS_PRIO     ) 1,
-		(CPU_STK    *)&AppTaskINIMIGOStk[0],
-		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
-		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
-		(OS_MSG_QTY  ) 0u,
-		(OS_TICK     ) 0u,
-		(void       *) 0,
-		(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-		(OS_ERR     *)&err_os);
-	APP_TEST_FAULT(err_os, OS_ERR_NONE);
-
-
-
-	// CRIAÇÃO DA TAREFA DESENHAR
-	OSTaskCreate((OS_TCB     *)&AppTaskDESENHARTCB,               
-		(CPU_CHAR   *)"App StartDESENHAR",
-		(OS_TASK_PTR ) App_TaskDESENHAR,
-		(void       *) 0,
-		(OS_PRIO     ) 2,
-		(CPU_STK    *)&AppTaskDESENHARStk[0],
-		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
-		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
-		(OS_MSG_QTY  ) 0u,
-		(OS_TICK     ) 0u,
-		(void       *) 0,
-		(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-		(OS_ERR     *)&err_os);
-	APP_TEST_FAULT(err_os, OS_ERR_NONE);
-
-	// CRIAÇÃO DA TAREFA DO BOMBERMAN
-	OSTaskCreate((OS_TCB     *)&AppTaskBOMBERMANTCB,                
-		(CPU_CHAR   *)"App StartBOMBERMAN",
-		(OS_TASK_PTR ) App_TaskBOMBERMAN,
-		(void       *) 0,
-		(OS_PRIO     ) 10,
-		(CPU_STK    *)&AppTaskBOMBERMANStk[0],
-		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
-		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
-		(OS_MSG_QTY  ) 0u,
-		(OS_TICK     ) 0u,
-		(void       *) 0,
-		(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
-		(OS_ERR     *)&err_os);
-	APP_TEST_FAULT(err_os, OS_ERR_NONE);
-
+	GUI_DrawImage(img_inicio, 0, 0, 1200, 800, 1); //DESENHA TELA DE INICIO
 
 	printf("\n Inicio do loop de msg");
 	// Loop de mensagens para interface grafica
@@ -426,7 +371,7 @@ static  void  App_TaskINIMIGO (void  *p_arg)
 			posicao_anterior[i]=inimigo[i].posicao;
 			anda(&inimigo[i],melhor_direcao);
 		}
-		OSTimeDlyHMSM(0,0,5,500,OS_OPT_TIME_DLY, &err_os);
+		OSTimeDlyHMSM(0,0,0,800,OS_OPT_TIME_DLY, &err_os);
 	}
 }
 
@@ -443,22 +388,23 @@ static  void  App_TaskBOMBA (void  *p_arg)
 
 }
 
-
-
 static  void  App_TaskBOMBERMAN (void  *p_arg)
 {
 	OS_ERR  err_os;
 	while (1)
 	{
-	OSSemPend (&MORTE, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait
-	if (bomberman.estado == MORTO){
-		//gameover();
-		
+		OSSemPend (&MORTE, 0, OS_OPT_PEND_BLOCKING, 0, &err_os); //wait
+		if (bomberman.estado == MORTO){
+			OSTimeDlyHMSM(0,0,0,800,OS_OPT_TIME_DLY, &err_os); //DELAY PARA VER MORTE
+			GUI_DrawImage(img_gameover, 0, 0, 1200, 800, 1); //DESENHA IMAGEM DE GAMEOVER
+			gameover();	//ENCERRA TASKS
+		}
+		if (inimigo[0].estado == MORTO && inimigo[1].estado == MORTO && inimigo[2].estado == MORTO){
+			OSTimeDlyHMSM(0,0,0,800,OS_OPT_TIME_DLY, &err_os);  //DELAY PARA VER MORTE
+			GUI_DrawImage(img_win, 0, 0, 1200, 800, 1); //DESENHA IMAGEM DE VITORIA
+			gameover();	//ENCERRA TASKS
+		}
 	}
-	if (inimigo[0].estado == MORTO && inimigo[1].estado == MORTO && inimigo[2].estado == MORTO){
-		//win();
-	}
-}
 }
 
 static  void  App_TaskDESENHAR (void  *p_arg)
@@ -502,7 +448,7 @@ static  void  App_TaskDESENHAR (void  *p_arg)
 					break;
 				case 11: GUI_DrawImage(exphorizontal, 24*j*K, 20*i*K, 36, 30, 1);//CENTRO EXPLOSAO	
 					break;
-				case 12: GUI_DrawImage(bomberman_bomba, 24*j*K, 20*i*K, 36, 30, 1);
+				case 12: GUI_DrawImage(img_bonus, 24*j*K, 20*i*K, 36, 30, 1);
 					break;
 				}
 			}
@@ -550,13 +496,24 @@ void anda(bicho *bbicho, Direcao ddirecao){
 		OSSemPost (&MORTE,OS_OPT_POST_1, &err_os); //signal
 
 	}
-
-	else if (LABIRINTO[nova_posicao.x][nova_posicao.y]==cod_bomberman){
-		(*bbicho).posicao=nova_posicao; //ATUALIZA A POSICAO DO BICHO
-		atualiza_posicoes(*bbicho);
-		bomberman.estado=MORTO;
-		OSSemPost (&MORTE,OS_OPT_POST_1, &err_os); //signal
+	//SE O INIMIGO ANDAR NA POSICAO DO BOMBERMAN, OU VICE-VERSA, O BOMBERMAN MORRE
+	else if (LABIRINTO[nova_posicao.x][nova_posicao.y]==cod_bomberman 
+		|| ((*bbicho).especie==4 && (LABIRINTO[nova_posicao.x][nova_posicao.y]==cod_inimigo1
+		|| LABIRINTO[nova_posicao.x][nova_posicao.y]==cod_inimigo2 || LABIRINTO[nova_posicao.x][nova_posicao.y]==cod_inimigo3))){
+			(*bbicho).posicao=nova_posicao; //ATUALIZA A POSICAO DO BICHO
+			atualiza_posicoes(*bbicho);
+			LABIRINTO[(*bbicho).posicao.x][(*bbicho).posicao.y]=0;
+			bomberman.estado=MORTO;
+			OSSemPost (&MORTE,OS_OPT_POST_1, &err_os); //signal
 	}
+	//SE O BICHO FOR O BOMBERMAN E A PROXIMA POSICAO FOR A DO BONUS, AUMENTA O MAXI DE BOMBAS E OCUPA POSICAO
+	else if ((*bbicho).especie==4 && LABIRINTO[nova_posicao.x][nova_posicao.y]==12){
+		LABIRINTO[(*bbicho).posicao.x][(*bbicho).posicao.y]=0; //LIBERA NA MATRIZ A POSICAO ATUAL DO BICHO
+		(*bbicho).posicao=nova_posicao; //ATUALIZA A POSICAO DO BICHO
+		atualiza_posicoes(*bbicho); //OCUPA POSICAO CORRESPONDENTE DA MATRIZ
+		max_bombas=10;
+	}
+
 	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal
 
 }
@@ -669,7 +626,115 @@ Direcao melhor_caminho(bicho bbicho, Posicao anterior){
 	case 2: return DIR;
 	case 3: return ESQ;
 	}
-	
+
+}
+
+void gameover(){
+	int i;
+	OS_ERR err_os;
+	jogo_rolando=0;
+	for (i=0;i<num_bombas;i++){
+		OSTaskDel(&AppTaskBOMBATCB[i],&err_os);
+	}
+	OSTaskDel(&AppTaskINIMIGOTCB,&err_os);
+	OSTaskDel(&AppTaskDESENHARTCB,&err_os);
+	OSTaskDel(&AppTaskBOMBERMANTCB,&err_os);
+}
+
+void inicia_jogo(){
+	//Parametros iniciais da bomba
+	int i,aux=1;
+	Posicao posicao_aux;
+	OS_ERR err_os;
+
+	jogo_rolando=1; //VARIAVEL DE ESTADO DO JOGO
+	memcpy(LABIRINTO, LABIRINTO2, sizeof(LABIRINTO)); //VOLTA AO ESTADO ORIGINAL DE LABIRINTO
+	num_bombas = 0; //NUM DE BOMBAS ATUAL
+	max_bombas = 1; //NUM MAXIMO DE BOMBAS, PODE IR ATE 10 (PELA TASK BOMBA)
+
+	//CRIA BOMBERMAN
+	bomberman.posicao.x=1;bomberman.posicao.y=1;bomberman.direcao=DIR;bomberman.estado=VIVO;bomberman.especie=4;
+	OSSemPend (&Mutex_MATRIZ, 0, OS_OPT_PEND_BLOCKING, 0, &err_os);//wait
+	atualiza_posicoes(bomberman);
+	//COLOCA BONUS EM ESPACO LIVRE
+	while (aux){
+		posicao_aux.x=rand()%XX;
+		posicao_aux.y=rand()%YY;
+		if ((LABIRINTO[posicao_aux.x][posicao_aux.y]==0)){		
+			aux=0;
+			LABIRINTO[posicao_aux.x][posicao_aux.y]=12; //RECEBE IMG DO BONUS;
+		}						
+	}
+	aux=1;
+
+
+	//GERA POSICOES E CRIA INIMIGOS
+	for (i=0;i<3;i++){
+		while (aux){
+			posicao_aux.x=rand()%XX;
+			posicao_aux.y=rand()%YY;
+			if ((LABIRINTO[posicao_aux.x][posicao_aux.y]==0)){		
+				aux=0;
+				//CRIA O INIMIGO I
+				inimigo[i].posicao.x=posicao_aux.x;
+				inimigo[i].posicao.y=posicao_aux.y;
+				inimigo[i].direcao=DIR;
+				inimigo[i].estado=VIVO;	
+				inimigo[i].especie=i+1;
+				atualiza_posicoes(inimigo[i]);
+			}			
+		}
+		aux=1;
+	}
+	OSSemPost (&Mutex_MATRIZ,OS_OPT_POST_1, &err_os); //signal		
+
+	// CRIAÇÃO DA TAREFA INIMIGO
+	OSTaskCreate((OS_TCB     *)&AppTaskINIMIGOTCB,               
+		(CPU_CHAR   *)"App StartINIMIGO",
+		(OS_TASK_PTR ) App_TaskINIMIGO,
+		(void       *) 0,
+		(OS_PRIO     ) 1,
+		(CPU_STK    *)&AppTaskINIMIGOStk[0],
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
+		(OS_MSG_QTY  ) 0u,
+		(OS_TICK     ) 0u,
+		(void       *) 0,
+		(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+		(OS_ERR     *)&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+	// CRIAÇÃO DA TAREFA DESENHAR
+	OSTaskCreate((OS_TCB     *)&AppTaskDESENHARTCB,               
+		(CPU_CHAR   *)"App StartDESENHAR",
+		(OS_TASK_PTR ) App_TaskDESENHAR,
+		(void       *) 0,
+		(OS_PRIO     ) 2,
+		(CPU_STK    *)&AppTaskDESENHARStk[0],
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
+		(OS_MSG_QTY  ) 0u,
+		(OS_TICK     ) 0u,
+		(void       *) 0,
+		(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+		(OS_ERR     *)&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+	// CRIAÇÃO DA TAREFA DO BOMBERMAN
+	OSTaskCreate((OS_TCB     *)&AppTaskBOMBERMANTCB,                
+		(CPU_CHAR   *)"App StartBOMBERMAN",
+		(OS_TASK_PTR ) App_TaskBOMBERMAN,
+		(void       *) 0,
+		(OS_PRIO     ) 10,
+		(CPU_STK    *)&AppTaskBOMBERMANStk[0],
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
+		(OS_MSG_QTY  ) 0u,
+		(OS_TICK     ) 0u,
+		(void       *) 0,
+		(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+		(OS_ERR     *)&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
 }
 
 //##########################################################
@@ -697,7 +762,8 @@ LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 			break;
 
 		case VK_F2:
-			// Insert code here to process the F2 key
+			if (jogo_rolando==0){
+				inicia_jogo();}
 			break; 
 
 		case VK_SPACE:

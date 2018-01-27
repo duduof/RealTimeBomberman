@@ -2,13 +2,13 @@
 /*
 *********************************************************************************************************
 *
-*                                              TRABALHO PR¡TICO - BCC722
+*                                              TRABALHO PR√ÅTICO - BCC722
 *
 *                                                  JOGO BOMBERMAN
 *
 * Arquivo			: app.c
 * Versao			: 1.0
-* Aluno(s)			: Guilherme - Ketheryn - Matheus Rocha
+* Aluno(s)			: Diego, Eduardo, Hugo
 * Data				: 
 * Descricao			: *****
 *********************************************************************************************************
@@ -63,7 +63,7 @@ int imgXPos, imgYPos;
 
 /*
 *********************************************************************************************************
-							LABIRINTOS - CODIFICA«√O DOS OBJETOS
+							LABIRINTOS - CODIFICA√á√ÉO DOS OBJETOS
 0 - vazio
 1 - parede
 2 - tijolo
@@ -75,7 +75,7 @@ int imgXPos, imgYPos;
 8 - *
 *********************************************************************************************************/
 
-//Labirinto dos obst·culos
+//Labirinto dos obst√°culos
 int LABIRINTO[13][17] = { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
 						 ,{ 1, 0, 0, 0, 2, 0, 2, 2, 0, 2, 2, 0, 0, 2, 0, 0, 1 }
 						 ,{ 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 2, 1 }
@@ -91,7 +91,7 @@ int LABIRINTO[13][17] = { { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
 					     ,{ 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1 }
    };
 
-// Vari·veis declaradas do mÛdulo da GUI
+// Vari√°veis declaradas do m√≥dulo da GUI
 extern HWND hwnd; 
 extern HDC hdc;
 extern MSG Msg;
@@ -115,7 +115,7 @@ extern MSG Msg;
 /*
 *********************************************************************************************************
 *                                      LOCAL FUNCTION PROTOTYPES
-*									DeclaraÁ„o das Tarefas Criadas
+*									Declara√ß√£o das Tarefas Criadas
 *********************************************************************************************************
 */
 static  void  App_TaskStart (void  *p_arg);

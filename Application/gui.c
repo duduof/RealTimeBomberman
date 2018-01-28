@@ -211,7 +211,7 @@ int GUI_Init(WNDPROC customWinProc)
         "Trabalho BCC722",
         "BOMBERMAN",
         WS_OVERLAPPEDWINDOW | SS_BITMAP,
-        CW_USEDEFAULT, CW_USEDEFAULT, 630, 430,
+        CW_USEDEFAULT, CW_USEDEFAULT, 680 + 20, 540 + 20,
         NULL, NULL, NULL, NULL);
 
     if(hwnd == NULL)

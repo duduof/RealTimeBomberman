@@ -85,7 +85,7 @@ static  CPU_STK  Enemy_3Stk[APP_TASK_START_STK_SIZE];
 
 
 // imagens usadas no programa
-HBITMAP * img;
+//HBITMAP * img;
 HBITMAP * img_back, *img_block,*img_bomb, *img_player, *img_bomberman, *img_bomberman_reverse, *img_explosion_center,*img_explosion_horizontal, *img_explosion_vertical, *img_fogo_vertical, *img_enemy;
 int imgXPos, imgYPos;
 
@@ -138,6 +138,8 @@ int BOMB_ON = 0;
 int num_bombs = 0;
 int placed_bombs = 0;
 
+int enemy_count  = 3;
+
 int BOMBS[100][3];
 
 int ENEMYS_POS[3][2] = 
@@ -181,10 +183,11 @@ static void Draw_Background(void);
 static void Draw_Player(void);
 static void Draw_Blocks(void);
 static void Draw_Bombs(int, int);
-static void Draw_Explosion(int, int);
+static void Draw_Explosion(HBITMAP*, int, int);
 static void Draw_Enemys(void);
-static void Draw_Enemy(int, int);
+static void Draw_Enemy(int, int, int);
 
+static void Kill_Enemy(int);
 static void Create_Enemys_Tasks(void);
 static void Criar_Figuras(void);
 static void Initiate_Bombs_Matrix(void);
@@ -349,7 +352,7 @@ static  void  App_TaskStart (void  *p_arg)
 		Draw_Background();
 		Draw_Blocks();
 		Draw_Player();
-		
+
 		Verifications();
 
 		OSTimeDlyHMSM(0,0,0,40,OS_OPT_TIME_DLY, &err_os);
@@ -366,8 +369,8 @@ static void Verifications(void)
 	int j;
 	int k;
 
-	for (i = 0 ; i < 13; i++) {
-		for (j = 0; j < 17; j++) {
+	for (i = 1 ; i < 12; i++) {
+		for (j = 1; j < 16; j++) {
 			if (LABIRINTO[i][j] == 8) {
 				if (BOMBERMAN_POS_X == j && BOMBERMAN_POS_Y == i) {
 					Finish_Game();
@@ -427,17 +430,44 @@ static  void  Explosion_Task (int  p_arg[])
 	int i;
 	int k;
 	int j;
-	
-	int explosion_time = 80;
 
-	LABIRINTO[y][x] = 8;
+	int explosion_time = 80;
 
 	BOMB_ON = 0;
 
 	if (GOD_MODE == 1) explosion_time = 30;
 
 	for (i = 0; i < explosion_time; i++) {
-		Draw_Explosion(x, y);
+		Draw_Explosion(img_explosion_center, x, y);
+		if (LABIRINTO[y][x-1] != 1) {
+			Draw_Explosion(img_explosion_horizontal, x-1, y);
+
+			if (x > 1 && LABIRINTO[y][x-2] != 1) {
+				Draw_Explosion(img_explosion_horizontal, x-2, y);
+			}
+		}
+		if (LABIRINTO[y][x+1] != 1) {
+			Draw_Explosion(img_explosion_horizontal, x+1, y);
+
+			if (x < 14 && LABIRINTO[y][x+2] != 1) {
+				Draw_Explosion(img_explosion_horizontal, x+2, y);
+			}
+		}
+		if (LABIRINTO[y-1][x] != 1) {
+			Draw_Explosion(img_explosion_vertical, x, y-1);
+
+			if (y > 1 && LABIRINTO[y-2][x] != 1) {
+				Draw_Explosion(img_explosion_vertical, x, y-2);
+			}
+		}
+		if (LABIRINTO[y+1][x] != 1) {
+			Draw_Explosion(img_explosion_vertical, x, y+1);
+
+			if (y < 10 && LABIRINTO[y+2][x] != 1) {
+				Draw_Explosion(img_explosion_vertical, x, y+2);
+			}
+		}
+
 		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
 	}
 
@@ -457,10 +487,10 @@ static  void Enemy_1 (void *p_arg){
 	while (1) {
 		int x = ENEMYS_POS[0][0];
 		int y = ENEMYS_POS[0][1];
-		
-			Draw_Enemy(x, y);
 
-		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_DLY, &err_os);
+		Draw_Enemy(1, x, y);
+
+		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
 	}
 }
 
@@ -470,16 +500,10 @@ static  void Enemy_2 (void *p_arg){
 	while (1) {
 		int x = ENEMYS_POS[1][0];
 		int y = ENEMYS_POS[1][1];
-		if (LABIRINTO[y][x] == 8 ) {
-			ENEMYS_POS[1][0] = 0;
-			ENEMYS_POS[1][1] = 0;
-			OSTaskDel(NULL, &err_os);
-			APP_TEST_FAULT(err_os, OS_ERR_NONE);
-			continue;
-		} else {
-			Draw_Enemy(x, y);
-		}
-		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_DLY, &err_os);
+
+		Draw_Enemy(2, x, y);
+
+		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
 	}
 }
 
@@ -489,21 +513,15 @@ static  void Enemy_3 (void *p_arg){
 	while (1) {
 		int x = ENEMYS_POS[2][0];
 		int y = ENEMYS_POS[2][1];
-		if (LABIRINTO[y][x] == 8 ) {
-			ENEMYS_POS[2][0] = 0;
-			ENEMYS_POS[2][1] = 0;
-			OSTaskDel(NULL, &err_os);
-			APP_TEST_FAULT(err_os, OS_ERR_NONE);
-			continue;
-		} else {
-			Draw_Enemy(x, y);
-		}
-		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_DLY, &err_os);
+
+		Draw_Enemy(3, x, y);
+
+		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
 	}
 }
 
 
-static void Draw_Enemy(int x, int y)
+static void Draw_Enemy(int enemy, int x, int y)
 {
 	GUI_DrawImage(img_enemy, // *img
 		x * BLOCK_SIZE, // posx
@@ -511,6 +529,8 @@ static void Draw_Enemy(int x, int y)
 		BLOCK_SIZE, // width
 		BLOCK_SIZE, // height
 		2); // index
+
+	LABIRINTO[y][x] = enemy + 2; // O código do inimigo é o seu número +2
 }
 
 
@@ -551,7 +571,7 @@ static void Draw_Blocks(void)
 
 	for (i = 0 ; i < 13; i++) {
 		for (j = 0; j < 17; j++) {
-			
+
 			if (LABIRINTO[i][j] == 2) {
 				GUI_DrawImage(img_block, // *img
 					j * BLOCK_SIZE, // posx
@@ -575,88 +595,59 @@ static void Draw_Bombs(int x, int y)
 		2); // index
 }
 
-static void Draw_Explosion(int x, int y)
+static void Draw_Explosion(HBITMAP *img, int x, int y)
 {
-	GUI_DrawImage(img_explosion_center, // *img
+	GUI_DrawImage(img, // *img
 		x * BLOCK_SIZE, // posx
 		y * BLOCK_SIZE, // posy
 		BLOCK_SIZE, // width
 		BLOCK_SIZE, // height
 		2); // index
+
+	if (LABIRINTO[y][x] == 3) {
+		Kill_Enemy(1);
+	}
+
+	if (LABIRINTO[y][x] == 4) {
+		Kill_Enemy(2);
+	}
+
+	if (LABIRINTO[y][x] == 5) {
+		Kill_Enemy(3);
+	}
+
 	LABIRINTO[y][x] = 8;
-	if (LABIRINTO[y][x-1] != 1) {
-		GUI_DrawImage(img_explosion_horizontal, // *img
-			(x-1) * BLOCK_SIZE, // posx
-			y * BLOCK_SIZE, // posy
-			BLOCK_SIZE, // width
-			BLOCK_SIZE, // height
-			2); // index
-		LABIRINTO[y][x-1] = 8;
-		if (x > 1 && LABIRINTO[y][x-2] != 1) {
-			GUI_DrawImage(img_explosion_horizontal, // *img
-				(x-2) * BLOCK_SIZE, // posx
-				y * BLOCK_SIZE, // posy
-				BLOCK_SIZE, // width
-				BLOCK_SIZE, // height
-				2); // index
-			LABIRINTO[y][x-2] = 8;
-		}
+}
+
+
+static void Kill_Enemy(int i)
+{
+	OS_ERR os_err;
+
+	if (i==1)
+	{
+		ENEMYS_POS[i-1][0] = 0;
+		ENEMYS_POS[i-1][1] = 0;
+		enemy_count--;
+		OSTaskDel(&Enemy_1TCB, &os_err);
+
 	}
-	if (LABIRINTO[y][x+1] != 1) {
-		GUI_DrawImage(img_explosion_horizontal, // *img
-			(x+1) * BLOCK_SIZE, // posx
-			y * BLOCK_SIZE, // posy
-			BLOCK_SIZE, // width
-			BLOCK_SIZE, // height
-			2); // index
-		LABIRINTO[y][x+1] = 8;
-		if (x < 14 && LABIRINTO[y][x+2] != 1) {
-			GUI_DrawImage(img_explosion_horizontal, // *img
-				(x+2) * BLOCK_SIZE, // posx
-				y * BLOCK_SIZE, // posy
-				BLOCK_SIZE, // width
-				BLOCK_SIZE, // height
-				2); // index
-			LABIRINTO[y][x+2] = 8;
-		}
+	if (i==2)
+	{
+		ENEMYS_POS[i-1][0] = 0;
+		ENEMYS_POS[i-1][1] = 0;
+		enemy_count--;
+		OSTaskDel(&Enemy_2TCB, &os_err);
 	}
-	if (LABIRINTO[y-1][x] != 1) {
-		GUI_DrawImage(img_explosion_vertical, // *img
-			x * BLOCK_SIZE, // posx
-			(y-1) * BLOCK_SIZE, // posy
-			BLOCK_SIZE, // width
-			BLOCK_SIZE, // height
-			2); // index
-		LABIRINTO[y-1][x] = 8;
-		if (y > 1 && LABIRINTO[y-2][x] != 1) {
-			GUI_DrawImage(img_explosion_vertical, // *img
-				x * BLOCK_SIZE, // posx
-				(y-2) * BLOCK_SIZE, // posy
-				BLOCK_SIZE, // width
-				BLOCK_SIZE, // height
-				2); // index
-			LABIRINTO[y-2][x] = 8;
-		}
-	}
-	if (LABIRINTO[y+1][x] != 1) {
-		GUI_DrawImage(img_explosion_vertical, // *img
-			x * BLOCK_SIZE, // posx
-			(y+1) * BLOCK_SIZE, // posy
-			BLOCK_SIZE, // width
-			BLOCK_SIZE, // height
-			2); // index
-		LABIRINTO[y+1][x] = 8;
-		if (y < 10 && LABIRINTO[y+2][x] != 1) {
-			GUI_DrawImage(img_explosion_vertical, // *img
-				x * BLOCK_SIZE, // posx
-				(y+2) * BLOCK_SIZE, // posy
-				BLOCK_SIZE, // width
-				BLOCK_SIZE, // height
-				2); // index
-			LABIRINTO[y+2][x] = 8;
-		}
+	if (i==3)
+	{
+		ENEMYS_POS[i-1][0] = 0;
+		ENEMYS_POS[i-1][1] = 0;
+		enemy_count--;
+		OSTaskDel(&Enemy_3TCB, &os_err);
 	}
 }
+
 
 static void Create_Enemys_Tasks () {
 	OS_ERR  err_os;

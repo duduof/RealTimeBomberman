@@ -72,6 +72,9 @@
   <ItemGroup>
     <Library Include="..\uC-FS_LIB\uC-FS-V4.lib" />
   </ItemGroup>
+  <ItemGroup>
+    <Image Include="enemy2.bmp" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5C916D15-4B74-4197-9C8E-984867A8FDB9}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>

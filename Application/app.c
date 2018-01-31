@@ -1,4 +1,3 @@
-
 /*
 *********************************************************************************************************
 *
@@ -37,7 +36,7 @@
 *********************************************************************************************************
 */
 
-int GOD_MODE = 1; // Em desenvolvimento = 1. Produção = 0;
+int GOD_MODE = 0; // Em desenvolvimento = 1. Produção = 0;
 
 enum GRAPHIC_OBJS{
 	ID_BUTTON_1 = 0,
@@ -54,7 +53,7 @@ static int MAP_HEIGTH = 13; // Altura da tela em pontos da matrix.
 int BLOCK_SIZE = 40; // Tamanho básico de cada bloco.
 
 int MAX_BOMBS = 100; // Número máximo de bombas que podem ser inserids.
-int BOMBS_DELAY = 200; // Delay de explosão das 
+int BOMBS_DELAY = 50; // Delay de explosão das 
 
 /*
 *********************************************************************************************************
@@ -153,6 +152,8 @@ int POWER_ON = 1; // Flag que sinaliza se o bomberman adquiriu algum poder.
 int num_bombs = 0; // Número total de bombas.
 int placed_bombs = 0; // Número total de bombas colocadas.
 
+int bomb_positionX = 0;
+int bomb_positionY = 0;
 int enemy_count  = 3; // Número de inimigos.
 
 /*
@@ -170,6 +171,19 @@ int ENEMYS_POS[3][2] =
 , {  1 , 11 }
 , { 15 , 11 }
 };
+
+//Arrumar isso
+
+/*
+int ENEMY1_POS_X = 15 ;		//ENEMYS_POS[0][0] ;
+int ENEMY1_POS_Y = 1; //ENEMYS_POS[0][1];
+
+int ENEMY2_POS_X = 1;//ENEMYS_POS[1][0];
+int ENEMY2_POS_Y = 11;//ENEMYS_POS[1][1];
+
+int ENEMY3_POS_X = 15;//ENEMYS_POS[2][0];
+int ENEMY3_POS_Y = 11;//ENEMYS_POS[2][1];
+*/
 
 /*
 *********************************************************************************************************
@@ -215,6 +229,7 @@ static void Draw_Enemy(int, HBITMAP*, int, int);
 static void Kill_Enemy(int);
 static void Create_Enemys_Tasks(void);
 static void Criar_Figuras(void);
+static void CreateSemaphores(void);
 static void Initiate_Bombs_Matrix(void);
 static void Make_Move(int);
 static void Put_Bomb(void);
@@ -222,10 +237,14 @@ static void Explode(int[]);
 static void Verifications(void);
 static void Finish_Game(void);
 
-OS_SEM player;
-OS_SEM commands; 
-OS_SEM blocks;
-OS_SEM enemys;
+static void Catch_Bomberman(int , int );
+
+
+static OS_SEM player;
+static OS_SEM commands; 
+static OS_SEM blocks;
+static OS_SEM enemys;//Por que esse semaforo?
+static OS_SEM bombSem;
 
 LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -261,37 +280,11 @@ int  main (void)
 
 	Initiate_Bombs_Matrix();
 
-	// Semáforos
-
-	OSSemCreate(&player,
-		"Player",
-		0,
-		&err_os);
-	APP_TEST_FAULT(err_os, OS_ERR_NONE);
-
-	OSSemCreate(&commands,
-		"Comandos",
-		0,
-		&err_os);
-	APP_TEST_FAULT(err_os, OS_ERR_NONE);
-
-	OSSemCreate(&blocks,
-		"Blocos",
-		0,
-		&err_os);
-	APP_TEST_FAULT(err_os, OS_ERR_NONE);
-
-	OSSemCreate(&enemys,
-		"Inimigos",
-		0,
-		&err_os);
-	APP_TEST_FAULT(err_os, OS_ERR_NONE);
-
 	OSTaskCreate((OS_TCB     *)&AppStartTaskTCB,                /* Cria a tarefa inicial.                             */
 		(CPU_CHAR   *)"App Start Task",
 		(OS_TASK_PTR ) App_TaskStart,
 		(void       *) 0,
-		(OS_PRIO     ) 10,
+		(OS_PRIO     ) 1,
 		(CPU_STK    *)&AppStartTaskStk[0],
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
@@ -357,6 +350,7 @@ static  void  App_TaskStart (void  *p_arg)
 	}
 
 	Criar_Figuras();
+	CreateSemaphores();
 
 	OSTaskCreate((OS_TCB     *)&Player_TaskTCB,                
 		(CPU_CHAR   *)"PLAYER TASK",
@@ -419,24 +413,12 @@ static  void  App_TaskStart (void  *p_arg)
 		(OS_ERR     *)&err_os);
 	APP_TEST_FAULT(err_os, OS_ERR_NONE);
 
+
 	Create_Enemys_Tasks();
+
 	Draw_Background();
 
-	OSSemPost(&player,     
-		OS_OPT_POST_1,
-		&err_os);
 
-	OSSemPost(&blocks,     
-		OS_OPT_POST_1,
-		&err_os);
-
-	OSSemPost(&enemys,     
-		OS_OPT_POST_1,
-		&err_os);
-
-	OSSemPost(&commands,     
-		OS_OPT_POST_1,
-		&err_os);
 
 	// Loop de mensagens para interface grafica
 	while (1)
@@ -452,11 +434,51 @@ static  void  App_TaskStart (void  *p_arg)
 		/*Draw_Player();*/
 		/*Draw_Enemys();*/
 
-		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
+
+		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_DLY, &err_os); //Mudar o valor 50 pode dificultar o jogo, o que pode ser um mod da fase
 
 	}
 
 	printf("\n fim do loop de msg");
+
+}
+
+static void CreateSemaphores(void){
+
+
+	OS_ERR  err_os;
+	// Semáforos
+	OSSemCreate(&player,
+		"Player",
+		1,
+		&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+	OSSemCreate(&commands,
+		"Comandos",
+		1,
+		&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+	OSSemCreate(&blocks,
+		"Blocos",
+		1,
+		&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+	OSSemCreate(&enemys,
+		"Inimigos",
+		1,
+		&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+	OSSemCreate(&bombSem,
+		"Bombas",
+		0,
+		&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+
 
 }
 
@@ -501,7 +523,7 @@ static  void  Player_Task (void  *p_arg)
 		}
 
 		OSSemPost(&commands,     
-			OS_OPT_POST_1,
+			OS_OPT_POST_NONE,
 			&err_os);
 	}
 }
@@ -523,25 +545,29 @@ static  void  Bg_Task (void  *p_arg)
 		Draw_Background();
 
 		OSSemPost(&player,     
-			OS_OPT_POST_1,
+			OS_OPT_POST_NONE,
 			&err_os);
 
 		OSSemPost(&blocks,     
-			OS_OPT_POST_1,
+			OS_OPT_POST_NONE,
 			&err_os);
 
 		OSSemPost(&enemys,     
-			OS_OPT_POST_1,
+			OS_OPT_POST_NONE,
 			&err_os);
 
 		Draw_Enemys();
 
-		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_DLY, &err_os);
+		OSSemPost(&bombSem,     
+			OS_OPT_POST_NONE,
+			&err_os);
+
+		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_DLY, &err_os);
 	}
 }
 
 
-// Task responsável pro verificar, desenhar e desencadear a ação de explodir bombas.
+// Task responsável por verificar, desenhar e desencadear a acao de explodir bombas.
 static  void  Bombs_Task (int  p_arg[])
 {
 	OS_ERR  err_os;
@@ -549,7 +575,7 @@ static  void  Bombs_Task (int  p_arg[])
 
 	while (1) 
 	{			
-		OSSemPend(&enemys,                            
+		OSSemPend(&bombSem,                            
 			0,                                  
 			OS_OPT_PEND_BLOCKING,                
 			&ts,
@@ -559,19 +585,21 @@ static  void  Bombs_Task (int  p_arg[])
 	}
 }
 
-// Task responsável por gerar as explosões e desenha-las.
+// Task responsavel por gerar as explosoes e desenha-las.
 static  void  Explosion_Task (int  p_arg[])
 {
 	OS_ERR        err_os;
 
-	int x = p_arg[0];
-	int y = p_arg[1];
+	/*int x = p_arg[0];
+	int y = p_arg[1];*/
+	int x = bomb_positionX;
+	int y = bomb_positionY;
 
 	int i;
 	int k;
 	int j;
 
-	int explosion_time = 80; // Tempo que a explosão continuará evidente no mapa.
+	int explosion_time = 50; // Tempo que a explosao continuara evidente no mapa.
 
 	BOMB_ON = 0;
 
@@ -592,7 +620,6 @@ static  void  Explosion_Task (int  p_arg[])
 		if (LABIRINTO[y][x+1] != 1) 
 		{
 			Draw_Explosion(img_explosion_horizontal, x+1, y);
-
 			if (POWER_ON == 1 && x < 14 && LABIRINTO[y][x+2] != 1) 
 			{
 				Draw_Explosion(img_explosion_horizontal, x+2, y);
@@ -601,18 +628,18 @@ static  void  Explosion_Task (int  p_arg[])
 		if (LABIRINTO[y-1][x] != 1) 
 		{
 			Draw_Explosion(img_explosion_vertical, x, y-1);
-
 			if (POWER_ON == 1 && y > 1 && LABIRINTO[y-2][x] != 1) 
 			{
+
 				Draw_Explosion(img_explosion_vertical, x, y-2);
 			}
 		}
 		if (LABIRINTO[y+1][x] != 1) 
 		{
 			Draw_Explosion(img_explosion_vertical, x, y+1);
-
 			if (POWER_ON == 1 && y < 10 && LABIRINTO[y+2][x] != 1) 
 			{
+
 				Draw_Explosion(img_explosion_vertical, x, y+2);
 			}
 		}
@@ -642,8 +669,6 @@ static  void Enemy_1 (void *p_arg)
 
 	while (1) 
 	{		
-		int x = ENEMYS_POS[0][0];
-		int y = ENEMYS_POS[0][1];
 
 		OSSemPend(&enemys,                            
 			0,                                  
@@ -651,12 +676,11 @@ static  void Enemy_1 (void *p_arg)
 			&ts,
 			&err_os); 
 
-		Draw_Enemy(1, img_enemy1, x, y);
+		//Draw_Enemy(1, img_enemy1, ENEMYS_POS[0][0], ENEMYS_POS[0][1]);
 
-		if (x == BOMBERMAN_POS_X && y == BOMBERMAN_POS_Y)
-		{
-			Finish_Game();
-		}
+		Catch_Bomberman(ENEMYS_POS[0][0],ENEMYS_POS[0][1]);
+
+
 	}
 }
 
@@ -671,13 +695,14 @@ static  void Enemy_2 (void *p_arg)
 		int x = ENEMYS_POS[1][0];
 		int y = ENEMYS_POS[1][1];
 
+		//Nao entendi esse semaforo
 		OSSemPend(&enemys,                            
 			0,                                  
 			OS_OPT_PEND_BLOCKING,                
 			&ts,
 			&err_os); 
 
-		Draw_Enemy(2, img_enemy2, x, y);
+		//Draw_Enemy(2, img_enemy2, x, y);
 
 		if (x == BOMBERMAN_POS_X && y == BOMBERMAN_POS_Y)
 		{
@@ -704,7 +729,7 @@ static  void Enemy_3 (void *p_arg)
 			&ts,
 			&err_os); 
 
-		Draw_Enemy(3, img_enemy3, x, y);
+		//Draw_Enemy(3, img_enemy3, x, y);
 
 		if (x == BOMBERMAN_POS_X && y == BOMBERMAN_POS_Y)
 		{
@@ -716,25 +741,16 @@ static  void Enemy_3 (void *p_arg)
 
 static void Draw_Enemys()
 {
-	int x = ENEMYS_POS[0][0];
-	int y = ENEMYS_POS[0][1];
-	if (x != 0)
-		Draw_Enemy(1, img_enemy1, x, y);
 
-	x = ENEMYS_POS[1][0];
-	y = ENEMYS_POS[1][1];
-	if (x != 0)
-		Draw_Enemy(2, img_enemy2, x, y);
-
-	x = ENEMYS_POS[2][0];
-	y = ENEMYS_POS[2][1];
-	if (x != 0)
-		Draw_Enemy(3, img_enemy3, x, y);
+	Draw_Enemy(1, img_enemy1, ENEMYS_POS[0][0], ENEMYS_POS[0][1]);
+	Draw_Enemy(2, img_enemy2, ENEMYS_POS[1][0], ENEMYS_POS[1][1]);
+	Draw_Enemy(3, img_enemy3, ENEMYS_POS[2][0], ENEMYS_POS[2][1]);
 }
 
 // Desenha um inimigo qualquer na tela
 static void Draw_Enemy(int enemy, HBITMAP *img, int x, int y)
 {
+	if( x == 0) return;
 	GUI_DrawImage(img, // *img
 		x * BLOCK_SIZE, // posx
 		y * BLOCK_SIZE, // posy
@@ -801,42 +817,53 @@ static void Draw_Blocks(void)
 // Desenha as bombas.
 static void Draw_Bombs()
 {
-	int i;
-	for (i = 0; i < num_bombs; i++) 
-	{
-		if (BOMBS[i][2] > 0) { // Verifica se está na hora de explodir a bomba.
-			BOMBS[i][2]--; // Decrementa quanto tempo falta para a bomba explodir.
-			GUI_DrawImage(img_bomb, // *img
-				BOMBS[i][0] * BLOCK_SIZE, // posx
-				BOMBS[i][1] * BLOCK_SIZE, // posy
-				BLOCK_SIZE, // width
-				BLOCK_SIZE, // height
-				3); // index
-		} 
-		else
+
+	while(1){
+		int i;
+		OS_ERR err_os;
+		for (i = 0; i < num_bombs; i++) 
 		{
-			Explode(BOMBS[i]);
-			// Define como 0 a posição da bomba explodida, ou seja, fora do mapa alcançável.
-			BOMBS[i][0] = 0;
-			BOMBS[i][1] = 0;
-			BOMBS[i][2] = 0;
+			printf("Numero de bombas %i \n" , num_bombs);
+			if (BOMBS[i][2] > 0) { // Verifica se está na hora de explodir a bomba.
+				BOMBS[i][2]--; // Decrementa quanto tempo falta para a bomba explodir.
+				printf("Ta desenhando a bomba %i \n", BOMBS[i][2]);
+
+				GUI_DrawImage(img_bomb, // *img
+					BOMBS[i][0] * BLOCK_SIZE, // posx
+					BOMBS[i][1] * BLOCK_SIZE, // posy
+					BLOCK_SIZE, // width
+					BLOCK_SIZE, // height
+					3); // index
+			} 
+			else
+			{
+				printf(" O que eh BOMBS[i] %i  e o i %i\n ", BOMBS[i],i);
+				Explode(BOMBS[i]);
+
+				// Define como 0 a posição da bomba explodida, ou seja, fora do mapa alcançável.
+				BOMBS[i][0] = 0;
+				BOMBS[i][1] = 0;
+				BOMBS[i][2] = 0;
+			}
+
+			//OSTimeDlyHMSM(0,0,0,30,OS_OPT_TIME_DLY, &err_os);
 		}
-
+		break;
 	}
-
 }
 
 // Desenha de fato as explosões e mata as tasks dos inimigos, caso sejam atingidos.
 static void Draw_Explosion(HBITMAP *img, int x, int y)
 {
-	printf("%d   ", x);
-	printf("%d\n", y);
+	//printf("%d   ", x);
+	//printf("%d\n", y);
 	GUI_DrawImage(img, // *img
 		x * BLOCK_SIZE, // posx
 		y * BLOCK_SIZE, // posy
 		BLOCK_SIZE, // width
 		BLOCK_SIZE, // height
 		3); // index
+	printf("Posicao x %i, y  %i \n",x,y);
 
 	if (LABIRINTO[y][x] == 3) 
 	{
@@ -866,6 +893,7 @@ static void Kill_Enemy(int i)
 	{
 		ENEMYS_POS[i-1][0] = 0;
 		ENEMYS_POS[i-1][1] = 0;
+		
 		enemy_count--;
 		OSTaskDel(&Enemy_1TCB, &os_err);
 
@@ -895,7 +923,7 @@ static void Create_Enemys_Tasks ()
 		(CPU_CHAR   *)"Enemy_1",
 		(OS_TASK_PTR ) Enemy_1,
 		(void       *) 0,
-		(OS_PRIO     ) 7,
+		(OS_PRIO     ) 5,
 		(CPU_STK    *)&Enemy_1Stk[0],
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
@@ -910,7 +938,7 @@ static void Create_Enemys_Tasks ()
 		(CPU_CHAR   *)"Enemy_2",
 		(OS_TASK_PTR ) Enemy_2,
 		(void       *) 0,
-		(OS_PRIO     ) 7,
+		(OS_PRIO     ) 5,
 		(CPU_STK    *)&Enemy_2Stk[0],
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
@@ -925,7 +953,7 @@ static void Create_Enemys_Tasks ()
 		(CPU_CHAR   *)"Enemy_3",
 		(OS_TASK_PTR ) Enemy_3,
 		(void       *) 0,
-		(OS_PRIO     ) 7,
+		(OS_PRIO     ) 5,
 		(CPU_STK    *)&Enemy_3Stk[0],
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
@@ -946,12 +974,12 @@ static void Make_Move(int opt)
 	OS_ERR  err_os;
 	CPU_TS  ts;
 
-	OSSemPend(&commands,                            
-		0,                                  
-		OS_OPT_PEND_BLOCKING,                
-		&ts,
-		&err_os);
-
+	/*OSSemPend(&commands,                            
+	0,                                  
+	OS_OPT_PEND_BLOCKING,                
+	&ts,
+	&err_os);
+	*/
 	//if (WAITING_CLICK == 1) return; // Flag que bloquei o multiplo clique.
 	//WAITING_CLICK = 1;
 
@@ -998,10 +1026,12 @@ static void Make_Move(int opt)
 		if (BOMB_ON == 0) // Caso não haja bombas no mapa, é permitido colocar uma.
 			Put_Bomb();
 	}
+
 	//Draw_Background();
 	OSSemPost(&commands,     
-		OS_OPT_POST_1,
+		OS_OPT_POST_NONE,
 		&err_os);
+
 	//OSTimeDlyHMSM(0,0,0,80,OS_OPT_TIME_DLY, &err_os);
 	WAITING_CLICK = 0;
 
@@ -1010,11 +1040,14 @@ static void Make_Move(int opt)
 // Planta de fato a bomba na posição atual do bomberman;
 static void Put_Bomb(void) 
 {
+	OS_ERR err_os;
+
 	BOMB_ON = 1; // Flag que indica uma bomba no mapa
 
 	if (placed_bombs == MAX_BOMBS) // Caso o player tente colocar mais bombas que o permitido, perde o jogo.
 	{
 		Finish_Game();
+		printf("Perdeu");
 		return;
 	};
 
@@ -1025,15 +1058,20 @@ static void Put_Bomb(void)
 	num_bombs++;
 	placed_bombs++;
 
+	printf("Posicao bin laden Y %i e C %i \n", BOMBERMAN_POS_Y,BOMBERMAN_POS_X);
 	LABIRINTO[BOMBERMAN_POS_Y][BOMBERMAN_POS_X] = 6; // Define na matrix de posições a posição da bomba
+
+
 }
 
 // Cria a task responsável pela explosão da bomba na posição x = bomb[0], y = bomb[1]
 static void Explode(int bomb[2])
 {
 	OS_ERR  err_os;
-	int x = bomb[0];
-	int y = bomb[1];
+	bomb_positionX = bomb[0]; //Variavel global de posicao da bomba
+	bomb_positionY = bomb[1];
+
+	printf("Xposition %i Ypos %i \n ", bomb[0],bomb[1]);
 
 	OSTaskCreate((OS_TCB     *)&Explosion_TaskTCB,                
 		(CPU_CHAR   *)"Explosion TASK",
@@ -1080,11 +1118,11 @@ static void Finish_Game(void)
 	}
 
 	// Caso o usuário perca o jogo, todas as tasks são mortas.
-	printf("PERDEU");
-	OSTaskDel(&Player_TaskTCB, &err_os);
-	APP_TEST_FAULT(err_os, OS_ERR_NONE);
-	OSTaskDel(&Bombs_TaskTCB, &err_os);
-	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+	printf("Game Over");
+	/*OSTaskDel(&Player_TaskTCB, &err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);*/
+	/*OSTaskDel(&Bombs_TaskTCB, &err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);*/
 	OSTaskDel(&AppStartTaskTCB, &err_os);
 	APP_TEST_FAULT(err_os, OS_ERR_NONE);
 }
@@ -1212,7 +1250,6 @@ LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 			// Exemplo
 			for(i=0;i<500;i++)
 			GUI_PutPixel(50+i,200,RGB(0,255,0));
-
 			// redesenha as imagens da tela
 			GUI_DrawImage(img, imgXPos, imgYPos, 100, 100,1);
 			*/
@@ -1253,3 +1290,114 @@ LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 	}
 	return 0;
 }
+
+//Funcao que ira calcular a melhor trajetoria para alcancar o bomberman
+
+static void Catch_Bomberman(int x, int y){
+
+	OS_ERR err_os;
+	int i;
+	int j;
+	int verify_wall_blocks[13][17];
+
+	//ENEMY1_POS_X = x;
+	//ENEMY1_POS_Y = y;
+	//int j;
+	BOMBERMAN_POS_X;
+	BOMBERMAN_POS_Y;
+
+	//Ainda Farei a Logica
+	/*for (i = 0 ; i < 13; i++) 
+	{
+	for (j = 0; j < 17; j++) 
+	{
+
+	if ((LABIRINTO[i][j] == 2) ||(LABIRINTO[i][j] == 1))
+	{
+
+	verify_wall_blocks[i][j] = 1;
+	}else{
+	verify_wall_blocks[i][j] = 0;
+	}
+	}
+
+
+	for (i = 1 ; i < 12; i++) 
+	{
+	for (j = 1; j < 16; j++) 
+	{
+	if(x > j){ //Indo pra esquerda
+	x--;
+	if((x == j)&&(verify_wall_blocks[i][j] == 1)){
+
+	x++;
+	}else
+	{
+	Draw_Cover(ENEMY1_POS_X,y);
+	OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_DLY, &err_os);
+	ENEMY1_POS_X = x;	
+	}
+
+	}else
+	{
+	if(x < j){
+	x++;
+	if((x == j)&&(verify_wall_blocks[i][j] == 1)){
+	x--;
+	}else
+	{
+	Draw_Cover(ENEMY1_POS_X,y);
+	OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_DLY, &err_os);
+	ENEMY1_POS_X = x;	
+	}
+
+
+	}
+	}
+
+
+
+	/*if(ENEMY1_POS_X > j){ //Indo pra esquerda
+	x--;
+	if(x == LABIRINTO[j]){
+
+	}
+
+	if (ENEMY1_POS_X == BOMBERMAN_POS_X && ENEMY1_POS_Y == BOMBERMAN_POS_Y)
+	{
+	Finish_Game();
+	}
+	}
+	}else {
+	if(ENEMY1_POS_X < j){ // Indo pra direita 
+	Draw_Cover(ENEMY1_POS_X,y);
+	OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_DLY, &err_os);
+	ENEMY1_POS_X++;
+	if (ENEMY1_POS_X == BOMBERMAN_POS_X && ENEMY1_POS_Y == BOMBERMAN_POS_Y)
+	{
+	Finish_Game();
+	}
+	}*/
+
+	//Primeiro teste
+	for(i = 0;i < 15; i++){
+
+
+		if(ENEMYS_POS[0][0]< 7) break; //Inimigo 1, pos X
+		Draw_Cover(ENEMYS_POS[0][0],y);
+		OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_DLY, &err_os);
+		ENEMYS_POS[0][0]--;
+		if (ENEMYS_POS[0][0]== BOMBERMAN_POS_X && ENEMYS_POS[0][1] == BOMBERMAN_POS_Y)
+		{
+			Finish_Game();
+		}
+	}
+
+	//Draw_Enemy(1, img_enemy1, enemy_positionX, enemy_positionY);
+
+}
+		//}
+	//}
+//}
+
+

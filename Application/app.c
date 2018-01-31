@@ -83,7 +83,11 @@ static  CPU_STK  Enemy_2Stk[APP_TASK_START_STK_SIZE];
 static  OS_TCB   Enemy_3TCB;
 static  CPU_STK  Enemy_3Stk[APP_TASK_START_STK_SIZE];
 
+static  OS_TCB  Bg_TaskTCB;
+static  CPU_STK  Bg_TaskStk[APP_TASK_START_STK_SIZE];
 
+static  OS_TCB  Blocks_TaskTCB;
+static  CPU_STK  Blocks_TaskStk[APP_TASK_START_STK_SIZE];
 /*
 *********************************************************************************************************
 *                                       LOCAL GLOBAL VARIABLES
@@ -92,7 +96,7 @@ static  CPU_STK  Enemy_3Stk[APP_TASK_START_STK_SIZE];
 
 
 // HBITMAP * img;
-HBITMAP * img_back, *img_block,*img_bomb, *img_player, *img_bomberman, *img_bomberman_reverse, *img_explosion_center,*img_explosion_horizontal, *img_explosion_vertical, *img_fogo_vertical, *img_enemy1, *img_enemy2, *img_enemy3;
+HBITMAP *img_cover, *img_back, *img_block,*img_bomb, *img_player, *img_bomberman, *img_bomberman_reverse, *img_explosion_center,*img_explosion_horizontal, *img_explosion_vertical, *img_fogo_vertical, *img_enemy1, *img_enemy2, *img_enemy3;
 
 
 /*
@@ -193,6 +197,8 @@ static  void  App_TaskStart (void  *p_arg);
 static  void  Player_Task (void  *p_arg);
 static  void  Bombs_Task (void  *p_arg);
 static  void  Explosion_Task (void  *p_arg);
+static  void  Bg_Task (void  *p_arg);
+static  void  Blocks_Task (void  *p_arg);
 
 static  void Enemy_1 (void *p_arg);
 static  void Enemy_2 (void *p_arg);
@@ -201,7 +207,7 @@ static  void Enemy_3 (void *p_arg);
 static void Draw_Background(void);
 static void Draw_Player(void);
 static void Draw_Blocks(void);
-static void Draw_Bombs(int, int);
+static void Draw_Bombs(void);
 static void Draw_Explosion(HBITMAP*, int, int);
 static void Draw_Enemys(void);
 static void Draw_Enemy(int, HBITMAP*, int, int);
@@ -215,6 +221,11 @@ static void Put_Bomb(void);
 static void Explode(int[]);
 static void Verifications(void);
 static void Finish_Game(void);
+
+OS_SEM player;
+OS_SEM commands; 
+OS_SEM blocks;
+OS_SEM enemys;
 
 LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
 
@@ -250,6 +261,32 @@ int  main (void)
 
 	Initiate_Bombs_Matrix();
 
+	// Semáforos
+
+	OSSemCreate(&player,
+		"Player",
+		0,
+		&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+	OSSemCreate(&commands,
+		"Comandos",
+		0,
+		&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+	OSSemCreate(&blocks,
+		"Blocos",
+		0,
+		&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+	OSSemCreate(&enemys,
+		"Inimigos",
+		0,
+		&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
 	OSTaskCreate((OS_TCB     *)&AppStartTaskTCB,                /* Cria a tarefa inicial.                             */
 		(CPU_CHAR   *)"App Start Task",
 		(OS_TASK_PTR ) App_TaskStart,
@@ -277,6 +314,7 @@ static void Criar_Figuras(void)
 {
 	img_back = GUI_CreateImage("fundo.bmp", BACKGROUND_IMAGE_WIDTH, BACKGROUND_IMAGE_HEIGTH);
 	img_block = GUI_CreateImage("tijolo.bmp", BLOCK_SIZE, BLOCK_SIZE);
+	img_cover =  GUI_CreateImage("cover.bmp", BLOCK_SIZE, BLOCK_SIZE);
 	img_bomberman = GUI_CreateImage("bomberman.bmp", BLOCK_SIZE, BLOCK_SIZE);
 	img_bomberman_reverse = GUI_CreateImage("bomberman_inverso.bmp", BLOCK_SIZE, BLOCK_SIZE);
 	img_enemy1 = GUI_CreateImage("enemy.bmp", BLOCK_SIZE, BLOCK_SIZE);
@@ -324,8 +362,24 @@ static  void  App_TaskStart (void  *p_arg)
 		(CPU_CHAR   *)"PLAYER TASK",
 		(OS_TASK_PTR ) Player_Task,
 		(void       *) 0,
-		(OS_PRIO     ) 9,
+		(OS_PRIO     ) 8,
 		(CPU_STK    *)&Player_TaskStk[0],
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
+		(OS_MSG_QTY  ) 0u,
+		(OS_TICK     ) 0u,
+		(void       *) 0,
+		(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+		(OS_ERR     *)&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
+
+	OSTaskCreate((OS_TCB     *)&Bg_TaskTCB,                
+		(CPU_CHAR   *)"BG TASK",
+		(OS_TASK_PTR ) Bg_Task,
+		(void       *) 0,
+		(OS_PRIO     ) 9,
+		(CPU_STK    *)&Bg_TaskStk[0],
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
 		(OS_MSG_QTY  ) 0u,
@@ -339,7 +393,7 @@ static  void  App_TaskStart (void  *p_arg)
 		(CPU_CHAR   *)"Bombs TASK",
 		(OS_TASK_PTR ) Bombs_Task,
 		(void       *) 0,
-		(OS_PRIO     ) 8,
+		(OS_PRIO     ) 5,
 		(CPU_STK    *)&Bombs_TaskStk[0],
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
 		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
@@ -350,7 +404,39 @@ static  void  App_TaskStart (void  *p_arg)
 		(OS_ERR     *)&err_os);
 	APP_TEST_FAULT(err_os, OS_ERR_NONE);
 
+	OSTaskCreate((OS_TCB     *)&Blocks_TaskTCB,                
+		(CPU_CHAR   *)"Bocks TASK",
+		(OS_TASK_PTR ) Blocks_Task,
+		(void       *) 0,
+		(OS_PRIO     ) 5,
+		(CPU_STK    *)&Blocks_TaskStk[0],
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE / 10u,
+		(CPU_STK_SIZE) APP_TASK_START_STK_SIZE,
+		(OS_MSG_QTY  ) 0u,
+		(OS_TICK     ) 0u,
+		(void       *) 0,
+		(OS_OPT      )(OS_OPT_TASK_STK_CHK | OS_OPT_TASK_STK_CLR),
+		(OS_ERR     *)&err_os);
+	APP_TEST_FAULT(err_os, OS_ERR_NONE);
+
 	Create_Enemys_Tasks();
+	Draw_Background();
+
+	OSSemPost(&player,     
+		OS_OPT_POST_1,
+		&err_os);
+
+	OSSemPost(&blocks,     
+		OS_OPT_POST_1,
+		&err_os);
+
+	OSSemPost(&enemys,     
+		OS_OPT_POST_1,
+		&err_os);
+
+	OSSemPost(&commands,     
+		OS_OPT_POST_1,
+		&err_os);
 
 	// Loop de mensagens para interface grafica
 	while (1)
@@ -361,14 +447,12 @@ static  void  App_TaskStart (void  *p_arg)
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 
-		Draw_Background();
-		Draw_Blocks();
-		Draw_Player();
-		Draw_Enemys();
+		//Draw_Background();
 
-		Verifications();
+		/*Draw_Player();*/
+		/*Draw_Enemys();*/
 
-		OSTimeDlyHMSM(0,0,0,20,OS_OPT_TIME_DLY, &err_os);
+		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
 
 	}
 
@@ -376,78 +460,102 @@ static  void  App_TaskStart (void  *p_arg)
 
 }
 
-// Verifica se o player se chocou com um inimigo ou com a explosão de uma bomba.
-static void Verifications(void)
-{
-	int i;
-	int j;
-	int k;
-
-	//for (i = 1 ; i < 12; i++) 
-	//{
-	//	if (BOMBERMAN_POS_Y == i) 
-	//	{
-	//		for (j = 1; j < 16; j++) 
-	//		{
-	//			if (LABIRINTO[i][j] == 8) 
-	//			{
-	//				if (BOMBERMAN_POS_X == j && BOMBERMAN_POS_Y == i) // Caso o bomberbam se encontre com o rastro da explosão.
-	//				{
-	//					Finish_Game();
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
-	for (k = 0; k < 3; k++) 
-	{
-		if (BOMBERMAN_POS_X == ENEMYS_POS[k][0] && BOMBERMAN_POS_Y == ENEMYS_POS[k][1]) // Caso o bomberbam se encontre com um inimigo.
-		{
-			Finish_Game();
-		}
-	}
-}
-
-// Task do player não utilizada no momento.
-static  void  Player_Task (void  *p_arg)
+// Task responsável por travar os comandos
+static  void  Blocks_Task (void  *p_arg)
 {
 	OS_ERR  err_os;
+	CPU_TS  ts;
 
 	while (1) 
 	{
+		OSSemPend(&blocks,                            
+			0,                                  
+			OS_OPT_PEND_BLOCKING,                
+			&ts,
+			&err_os);
+
+		Draw_Blocks();
+
+	}
+}
+
+// Task do player
+static  void  Player_Task (void  *p_arg)
+{
+	OS_ERR  err_os;
+	CPU_TS  ts;
+
+	while (1) 
+	{
+		OSSemPend(&player,                            
+			0,                                  
+			OS_OPT_PEND_BLOCKING,                
+			&ts,
+			&err_os); 
+
+		Draw_Player();
+
 		if (LABIRINTO[BOMBERMAN_POS_Y][BOMBERMAN_POS_X] == 8) 
 		{
 			Finish_Game();
 		}
-		OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
+
+		OSSemPost(&commands,     
+			OS_OPT_POST_1,
+			&err_os);
 	}
 }
+
+// Task do background
+static  void  Bg_Task (void  *p_arg)
+{
+	OS_ERR  err_os;
+	CPU_TS  ts;
+
+	while (1) 
+	{
+		OSSemPend(&commands,                            
+			0,                                  
+			OS_OPT_PEND_BLOCKING,                
+			&ts,
+			&err_os); 
+
+		Draw_Background();
+
+		OSSemPost(&player,     
+			OS_OPT_POST_1,
+			&err_os);
+
+		OSSemPost(&blocks,     
+			OS_OPT_POST_1,
+			&err_os);
+
+		OSSemPost(&enemys,     
+			OS_OPT_POST_1,
+			&err_os);
+
+		Draw_Enemys();
+
+		OSTimeDlyHMSM(0,0,0,10,OS_OPT_TIME_DLY, &err_os);
+	}
+}
+
 
 // Task responsável pro verificar, desenhar e desencadear a ação de explodir bombas.
 static  void  Bombs_Task (int  p_arg[])
 {
 	OS_ERR  err_os;
+	CPU_TS  ts;
 
-	int i;
 	while (1) 
 	{			
-		for (i = 0; i < num_bombs; i++) 
-		{
-			if (BOMBS[i][2] > 0) { // Verifica se está na hora de explodir a bomba.
-				BOMBS[i][2]--; // Decrementa quanto tempo falta para a bomba explodir.
-				Draw_Bombs(BOMBS[i][0], BOMBS[i][1]); // Desenha a bomba na posição dada.
-			} 
-			else
-			{
-				Explode(BOMBS[i]);
-				// Define como 0 a posição da bomba explodida, ou seja, fora do mapa alcançável.
-				BOMBS[i][0] = 0;
-				BOMBS[i][1] = 0;
-				BOMBS[i][2] = 0;
-			}
+		OSSemPend(&enemys,                            
+			0,                                  
+			OS_OPT_PEND_BLOCKING,                
+			&ts,
+			&err_os); 
 
-		}
-		OSTimeDlyHMSM(0,0,0,30,OS_OPT_TIME_DLY, &err_os);
+		Draw_Bombs();
 	}
 }
 
@@ -530,15 +638,25 @@ static  void  Explosion_Task (int  p_arg[])
 static  void Enemy_1 (void *p_arg)
 {
 	OS_ERR  err_os;
+	CPU_TS  ts;
 
 	while (1) 
-	{
+	{		
 		int x = ENEMYS_POS[0][0];
 		int y = ENEMYS_POS[0][1];
 
-		//Draw_Enemy(1, img_enemy1,x, y);
+		OSSemPend(&enemys,                            
+			0,                                  
+			OS_OPT_PEND_BLOCKING,                
+			&ts,
+			&err_os); 
 
-		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_DLY, &err_os);
+		Draw_Enemy(1, img_enemy1, x, y);
+
+		if (x == BOMBERMAN_POS_X && y == BOMBERMAN_POS_Y)
+		{
+			Finish_Game();
+		}
 	}
 }
 
@@ -546,21 +664,33 @@ static  void Enemy_1 (void *p_arg)
 static  void Enemy_2 (void *p_arg)
 {
 	OS_ERR  err_os;
+	CPU_TS  ts;
 
 	while (1) 
 	{
 		int x = ENEMYS_POS[1][0];
 		int y = ENEMYS_POS[1][1];
 
-		//Draw_Enemy(2, img_enemy2, x, y);
+		OSSemPend(&enemys,                            
+			0,                                  
+			OS_OPT_PEND_BLOCKING,                
+			&ts,
+			&err_os); 
 
-		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_DLY, &err_os);
+		Draw_Enemy(2, img_enemy2, x, y);
+
+		if (x == BOMBERMAN_POS_X && y == BOMBERMAN_POS_Y)
+		{
+			Finish_Game();
+		}
+
 	}
 }
 
 // Task inimigo 3
 static  void Enemy_3 (void *p_arg)
 {
+	CPU_TS  ts;
 	OS_ERR  err_os;
 
 	while (1) 
@@ -568,9 +698,19 @@ static  void Enemy_3 (void *p_arg)
 		int x = ENEMYS_POS[2][0];
 		int y = ENEMYS_POS[2][1];
 
-		//Draw_Enemy(3, img_enemy3, x, y);
+		OSSemPend(&enemys,                            
+			0,                                  
+			OS_OPT_PEND_BLOCKING,                
+			&ts,
+			&err_os); 
 
-		OSTimeDlyHMSM(0,0,0,100,OS_OPT_TIME_DLY, &err_os);
+		Draw_Enemy(3, img_enemy3, x, y);
+
+		if (x == BOMBERMAN_POS_X && y == BOMBERMAN_POS_Y)
+		{
+			Finish_Game();
+		}
+
 	}
 }
 
@@ -579,7 +719,7 @@ static void Draw_Enemys()
 	int x = ENEMYS_POS[0][0];
 	int y = ENEMYS_POS[0][1];
 	if (x != 0)
-		Draw_Enemy(1, img_enemy1,x, y);
+		Draw_Enemy(1, img_enemy1, x, y);
 
 	x = ENEMYS_POS[1][0];
 	y = ENEMYS_POS[1][1];
@@ -609,6 +749,17 @@ static void Draw_Enemy(int enemy, HBITMAP *img, int x, int y)
 static void Draw_Background(void)
 {
 	GUI_DrawImage(img_back, 4, 0, BACKGROUND_IMAGE_WIDTH, BACKGROUND_IMAGE_HEIGTH, 0); // Coloca o Fundo com offset proposital de 4px em x.
+}
+
+// Desenha a cobertura da imagem anterior
+static void Draw_Cover(int x, int y)
+{
+	GUI_DrawImage(img_cover, // *img
+		x * BLOCK_SIZE, // posx
+		y * BLOCK_SIZE, // posy
+		BLOCK_SIZE, // width
+		BLOCK_SIZE, // height
+		2); // index
 }
 
 // Desenha o player na posição atual
@@ -648,20 +799,38 @@ static void Draw_Blocks(void)
 }
 
 // Desenha as bombas.
-static void Draw_Bombs(int x, int y)
+static void Draw_Bombs()
 {
-	if (x == 0 && y == 0) return;
-	GUI_DrawImage(img_bomb, // *img
-		x * BLOCK_SIZE, // posx
-		y * BLOCK_SIZE, // posy
-		BLOCK_SIZE, // width
-		BLOCK_SIZE, // height
-		3); // index
+	int i;
+	for (i = 0; i < num_bombs; i++) 
+	{
+		if (BOMBS[i][2] > 0) { // Verifica se está na hora de explodir a bomba.
+			BOMBS[i][2]--; // Decrementa quanto tempo falta para a bomba explodir.
+			GUI_DrawImage(img_bomb, // *img
+				BOMBS[i][0] * BLOCK_SIZE, // posx
+				BOMBS[i][1] * BLOCK_SIZE, // posy
+				BLOCK_SIZE, // width
+				BLOCK_SIZE, // height
+				3); // index
+		} 
+		else
+		{
+			Explode(BOMBS[i]);
+			// Define como 0 a posição da bomba explodida, ou seja, fora do mapa alcançável.
+			BOMBS[i][0] = 0;
+			BOMBS[i][1] = 0;
+			BOMBS[i][2] = 0;
+		}
+
+	}
+
 }
 
 // Desenha de fato as explosões e mata as tasks dos inimigos, caso sejam atingidos.
 static void Draw_Explosion(HBITMAP *img, int x, int y)
 {
+	printf("%d   ", x);
+	printf("%d\n", y);
 	GUI_DrawImage(img, // *img
 		x * BLOCK_SIZE, // posx
 		y * BLOCK_SIZE, // posy
@@ -775,13 +944,22 @@ static void Make_Move(int opt)
 	*  Ex.: LABIRINTO[Y][X];
 	*/
 	OS_ERR  err_os;
+	CPU_TS  ts;
 
-	if (WAITING_CLICK == 1) return; // Flag que bloquei o multiplo clique.
+	OSSemPend(&commands,                            
+		0,                                  
+		OS_OPT_PEND_BLOCKING,                
+		&ts,
+		&err_os);
+
+	//if (WAITING_CLICK == 1) return; // Flag que bloquei o multiplo clique.
+	//WAITING_CLICK = 1;
 
 	if (opt == 1) // LEFT
 	{
 		int nextMove = LABIRINTO[BOMBERMAN_POS_Y][BOMBERMAN_POS_X - 1];
-		if (nextMove == 0 || nextMove == 8)
+		int canMove = nextMove == 0 || nextMove == 8 || nextMove == 3 || nextMove == 4 || nextMove == 5;
+		if (canMove)
 		{
 			img_player = img_bomberman_reverse;
 			BOMBERMAN_POS_X--;
@@ -790,7 +968,8 @@ static void Make_Move(int opt)
 	} else if (opt == 2) // UP
 	{
 		int nextMove = LABIRINTO[BOMBERMAN_POS_Y - 1][BOMBERMAN_POS_X];
-		if (nextMove == 0 || nextMove == 8)
+		int canMove = nextMove == 0 || nextMove == 8 || nextMove == 3 || nextMove == 4 || nextMove == 5;
+		if (canMove)
 		{
 			BOMBERMAN_POS_Y--;
 			BOMBERMAN_Y -=  BLOCK_SIZE;
@@ -798,7 +977,8 @@ static void Make_Move(int opt)
 	} else if (opt == 3) // RIGHT
 	{
 		int nextMove = LABIRINTO[BOMBERMAN_POS_Y][BOMBERMAN_POS_X + 1];
-		if (nextMove == 0 || nextMove == 8)
+		int canMove = nextMove == 0 || nextMove == 8 || nextMove == 3 || nextMove == 4 || nextMove == 5;
+		if (canMove)
 		{
 			img_player = img_bomberman;
 			BOMBERMAN_POS_X++;
@@ -807,7 +987,8 @@ static void Make_Move(int opt)
 	} else if (opt == 4) // DOWN
 	{
 		int nextMove = LABIRINTO[BOMBERMAN_POS_Y + 1][BOMBERMAN_POS_X];
-		if (nextMove == 0 || nextMove == 8)
+		int canMove = nextMove == 0 || nextMove == 8 || nextMove == 3 || nextMove == 4 || nextMove == 5;
+		if (canMove)
 		{
 			BOMBERMAN_POS_Y++;
 			BOMBERMAN_Y +=  BLOCK_SIZE;
@@ -817,8 +998,11 @@ static void Make_Move(int opt)
 		if (BOMB_ON == 0) // Caso não haja bombas no mapa, é permitido colocar uma.
 			Put_Bomb();
 	}
-	WAITING_CLICK = 1;
-	OSTimeDlyHMSM(0,0,0,80,OS_OPT_TIME_DLY, &err_os);
+	//Draw_Background();
+	OSSemPost(&commands,     
+		OS_OPT_POST_1,
+		&err_os);
+	//OSTimeDlyHMSM(0,0,0,80,OS_OPT_TIME_DLY, &err_os);
 	WAITING_CLICK = 0;
 
 }
@@ -908,6 +1092,7 @@ static void Finish_Game(void)
 // Step 4: the Window Procedure
 LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
+	OS_ERR err_os;
 
 	switch(msg)
 	{
@@ -936,22 +1121,40 @@ LRESULT CALLBACK HandleGUIEvents(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lPar
 
 		case VK_LEFT:
 			// Insert code here to process the LEFT ARROW key
-			Make_Move(1);
+			if(VK_LEFT == wParam) {
+				OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
+				if(VK_LEFT == wParam) {
+					Make_Move(1);
+				}
+			}
 			break;
 
 		case VK_RIGHT:
 			// Insert code here to process the RIGHT ARROW key
-			Make_Move(3);
+			if(VK_RIGHT == wParam) {
+				OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
+				if(VK_RIGHT == wParam) {
+					Make_Move(3);
+				}
+			}
 			break;
 
 		case VK_UP:
-			// Insert code here to process the UP ARROW key
-			Make_Move(2);
+			if(VK_UP == wParam) {
+				OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
+				if(VK_UP == wParam) {
+					Make_Move(2);
+				}
+			}
 			break;
 
 		case VK_DOWN:
-			// Insert code here to process the DOWN ARROW key
-			Make_Move(4);
+			if(VK_DOWN == wParam) {
+				OSTimeDlyHMSM(0,0,0,50,OS_OPT_TIME_DLY, &err_os);
+				if(VK_DOWN == wParam) {
+					Make_Move(4);
+				}
+			}
 			break;
 
 		case VK_SPACE:

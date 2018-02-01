@@ -26,10 +26,17 @@
 
 // biblioteca 
 #include "gui.h"
+
+#include <stdlib.h>
+
 #define DEFAULT_BUFLEN 512
 #define DEFAULT_PORT "27015"
 #define SIZE_TIJOLO_DEFAULT 40
 
+
+typedef int bool;
+#define true 1
+#define false 0
 /*
 *********************************************************************************************************
 *                                           LOCAL CONSTANTS
@@ -97,6 +104,25 @@ static  CPU_STK  Blocks_TaskStk[APP_TASK_START_STK_SIZE];
 // HBITMAP * img;
 HBITMAP *img_cover, *img_back, *img_block,*img_bomb, *img_player, *img_bomberman, *img_bomberman_reverse, *img_explosion_center,*img_explosion_horizontal, *img_explosion_vertical, *img_fogo_vertical, *img_enemy1, *img_enemy2, *img_enemy3;
 
+/*
+*********************************************************************************************************
+*                                       LOCAL GLOBAL STRUCTS
+*********************************************************************************************************
+*/
+// e.g. posicao [3][5] teria row 3, col 5 -- inverter?
+struct Location {
+   int row; 
+   int col;
+};
+
+// Uma struct que possui uma serie de Localizacoes
+struct Queue {
+    struct Location* contents; // ptr para array alocado dinamicamente
+    int tail; // quantas localizacoes foram adicionadas?
+                // (index do proximo item livre no final)
+    int head; // quantas localizacoes foram retiradas?
+             // (index da primeira localizacao ocupada)
+};
 
 /*
 *********************************************************************************************************
@@ -167,7 +193,7 @@ int BOMBS[100][3];
 * A primeira coluna de cada entrada representa a posi��o em X, a segunda em Y.
 */
 int ENEMYS_POS[3][2] = 
-{ { 15 ,  1 }
+{ { 13 ,  1 }
 , {  1 , 11 }
 , { 15 , 11 }
 };
@@ -239,6 +265,17 @@ static void Finish_Game(void);
 
 static void Catch_Bomberman(int , int );
 
+// Construtor da Queue, maxlen tem que se tao grande quando
+// o numero maximo de localizacoes que vao ser colocadas na queue
+static void init(struct Queue * q, int maxlen);
+// insere uma nova localizacao no final da queue
+static void add_to_back(struct Queue * q, struct Location loc);
+// retorna e remove a localizacao mais velha da queue ainda nao removida
+static struct Location remove_from_front(struct Queue * q);
+// olha se a queue ta vazia
+static bool is_empty(struct Queue * q);
+// funcao para realizar bfs
+static int map_search(int rows, int cols, int inimigo, struct Location **predecessor, int *r, int *c);
 
 static OS_SEM player;
 static OS_SEM commands; 
@@ -666,7 +703,25 @@ static  void Enemy_1 (void *p_arg)
 {
 	OS_ERR  err_os;
 	CPU_TS  ts;
-
+	int sucesso;
+	int rows;
+	int cols;
+	int i;
+	int auxC;
+	int auxR;
+	int j;
+	int n;
+	int r = -1;
+	int c = -1;
+	int *pr = &r;
+  	int *pc = &c;
+	struct Location** predecessor = NULL;
+	struct Location sucessor[128];
+	// int ** sucessor 
+	int var_y = ENEMYS_POS[0][1];
+	int var_x = ENEMYS_POS[0][0];
+	cols = 13;
+	rows = 17;
 	while (1) 
 	{		
 
@@ -676,10 +731,61 @@ static  void Enemy_1 (void *p_arg)
 			&ts,
 			&err_os); 
 
+
+		// Cria estrutura para olhar caminho 
+		// Inicializa tudo com (-1, -1)
+		// struct Location **predecessor = (struct Location **)malloc(rows*sizeof(struct Location));
+		predecessor = (struct Location **)malloc(rows*sizeof(struct Location));
+		for(i = 0; i < rows; i++) {
+			predecessor[i] = (struct Location *)malloc(cols*sizeof(struct Location));
+			for(j = 0; j < cols; j++) {
+				predecessor[i][j].row = -1;
+				predecessor[i][j].col = -1;
+			}
+		}
 		//Draw_Enemy(1, img_enemy1, ENEMYS_POS[0][0], ENEMYS_POS[0][1]);
+		sucesso = map_search(cols, rows, 0, predecessor, pr, pc);
+		printf("sucesso = %d\n", sucesso);
+		if(sucesso == 1) {
 
-		Catch_Bomberman(ENEMYS_POS[0][0],ENEMYS_POS[0][1]);
+			printf("c = %d   -   r = %d", c, r);
+			n = 0;
+			//sucessor = (struct Location *)malloc(n*sizeof(struct Location));
+			while(predecessor[r][c].row != -1 || predecessor[r][c].col != -1)
+			{
+				// ENEMYS_POS[0][0] /
+				printf("c = %d   -   r = %d\n", c, r);
+				auxC = c;
+				auxR = r;
+				r = predecessor[auxR][auxC].row;
+				c = predecessor[auxR][auxC].col;
+				sucessor[n].row = r;
+				sucessor[n].col = c;
+				n++;
+			}
+			for(i = n; i >= 0; i--) {
+				if(sucessor[i].row == ENEMYS_POS[0][0] - 1) ENEMYS_POS[0][0]--;
+				if(sucessor[i].row == ENEMYS_POS[0][0] + 1) ENEMYS_POS[0][0]++;
+				if(sucessor[i].col == ENEMYS_POS[0][1] - 1) ENEMYS_POS[0][1]--;
+				if(sucessor[i].col == ENEMYS_POS[0][1] + 1) ENEMYS_POS[0][1]++;
 
+				// if(ENEMYS_POS[0][0]< 7) break; //Inimigo 1, pos X
+				OSTimeDlyHMSM(0,0,0,500,OS_OPT_TIME_DLY, &err_os);
+				// ENEMYS_POS[0][0]--;
+				if (ENEMYS_POS[0][0]== BOMBERMAN_POS_X && ENEMYS_POS[0][1] == BOMBERMAN_POS_Y)
+				{
+					Finish_Game();
+				}
+			}
+		}
+		
+		for(i = 0; i < rows; i++) {
+			
+            free(predecessor[i]);
+        }
+        free(predecessor);
+		//Catch_Bomberman(ENEMYS_POS[0][0],ENEMYS_POS[0][1]);
+		// OSTimeDlyHMSM(0,0,0,50000,OS_OPT_TIME_DLY, &err_os);
 
 	}
 }
@@ -1399,5 +1505,225 @@ static void Catch_Bomberman(int x, int y){
 		//}
 	//}
 //}
+static void init(struct Queue * q, int maxlen) {
+    q->contents = malloc(sizeof(struct Location));
+    q->tail = 0;
+    q->head = 0;
+}
+static void add_to_back(struct Queue * q, struct Location loc) {
+    q->contents[q->tail] = loc;
+    q->tail = q->tail+1;
+}
+static struct Location remove_from_front(struct Queue * q) {
+    q->head = q->head + 1;
+    return (q->contents[q->head - 1]);
+}
+static bool is_empty(struct Queue * q) {
+    return (q->head == q->tail);
+}
 
+static int map_search(int cols, int rows, int inimigo, struct Location **predecessor, int *r, int *c) {
+    int i;
+    int j;
+    int player_row = BOMBERMAN_POS_X;
+    int player_col = BOMBERMAN_POS_Y;
+    // Cria a Queue
+    struct Queue myQueue;
+    init(&myQueue, rows*cols);
+    // Cria a matrix para checar se a celula foi pesquisada
+    // inicializa tudo = 0
+    int **visitado = (int **)malloc(rows*sizeof(int));
+    for(i = 0; i < rows; i++) {
+        visitado[i] = (int *)malloc(cols*sizeof(int));
+        for(j = 0; j < cols; j++) {
+            visitado[i][j] = 0;
+        }
+    }
 
+    
+
+    // Para saber localizacao anterior e atual
+    struct Location current;
+    struct Location previous;
+
+    // Encontra o S e olha se eh o unico S
+    int SCount = 0;
+    for(i = 0; i < rows; i++) {
+        for(j = 0; j < cols; j++) {
+			
+            if(i == ENEMYS_POS[inimigo][0] && j == ENEMYS_POS[inimigo][1]) {
+				printf("i = %d  -  j = %d\n", i, j);
+				printf("i = %d  -  j = %d\n", ENEMYS_POS[inimigo][0], ENEMYS_POS[inimigo][1]);
+                visitado[i][j] = 1;
+                current.row = i;
+                current.col = j;
+                add_to_back(&myQueue, current);
+				SCount = SCount + 1;
+            }
+        }
+    }
+    // Se nao tem apenas uma posicao inicial S, sair
+    if(SCount != 1) {
+        for(i = 0; i < rows; i++) {
+            free(visitado[i]);
+            // free(predecessor[i]);
+        }
+        free(visitado);
+        // free(predecessor);
+        return -1;
+    }
+
+    // Breadth First Search
+    bool foundS = false;
+    while(!(is_empty(&myQueue))) {
+        current = remove_from_front(&myQueue);
+        previous = current;
+		// printf("previous.row = %d\n", previous.row);
+        // Tenta ir pro norte
+        if((current.row - 1 >= 0)
+            && (LABIRINTO[current.col][current.row - 1] != 2)
+            && (LABIRINTO[current.col][current.row - 1] != 1)
+            && (visitado[current.row - 1][current.col] == 0))
+        {
+            // Move para o norte se valido
+            current.row = current.row - 1;
+            // Guarda a casa anterior se for 0
+            if((player_row == current.row) && (player_col == current.col)) {
+				printf("norte\n");
+				
+                predecessor[current.row][current.col].row = previous.row;
+				predecessor[current.row][current.col].col = previous.col;
+                visitado[current.row][current.col] = 1;
+                add_to_back(&myQueue, current);
+                foundS = true;
+				*r = previous.row;
+				*c = previous.col;
+                break;
+            }
+            else if(LABIRINTO[current.col][current.row] == 0) {
+                predecessor[current.row][current.col].row = previous.row;
+				predecessor[current.row][current.col].col = previous.col;
+                visitado[current.row][current.col] = 1;
+                add_to_back(&myQueue, current);
+                current = previous;
+            }
+        }
+        // Tenta ir pro leste
+        if((current.col + 1 < cols)
+            && (LABIRINTO[current.col + 1][current.row] != 2)
+            && (LABIRINTO[current.col + 1][current.row] != 1)
+            && (visitado[current.row][current.col + 1] == 0))
+        {
+            // Move para o leste se valido
+            current.col = current.col + 1;
+            // Guarda a casa anterior se for 0
+            if((player_row == current.row) && (player_col == current.col)) {
+				printf("leste\n");
+
+                predecessor[current.row][current.col].row = previous.row;
+				predecessor[current.row][current.col].col = previous.col;
+                visitado[current.row][current.col] = 1;
+                add_to_back(&myQueue, current);
+                foundS = true;
+				*r = previous.row;
+				*c = previous.col;
+                break;
+            }
+            else if(LABIRINTO[current.col][current.row] == 0) {
+				
+                predecessor[current.row][current.col].row = previous.row;
+				predecessor[current.row][current.col].col = previous.col;
+                visitado[current.row][current.col] = 1;
+                add_to_back(&myQueue, current);
+                current = previous;
+            }
+        }
+        // Tenta ir pro sul
+        if((current.row + 1 < rows)
+            && (LABIRINTO[current.col][current.row + 1] != 2)
+            && (LABIRINTO[current.col][current.row + 1] != 1)
+            && (visitado[current.row + 1][current.col] == 0))
+        {
+            // Move para o sul se valido
+            current.row = current.row + 1;
+            // Para se for jogador
+            if((player_row == current.row) && (player_col == current.col)) {
+				printf("sul\n");
+				
+                predecessor[current.row][current.col].row = previous.row;
+				predecessor[current.row][current.col].col = previous.col;
+                visitado[current.row][current.col] = 1;
+                add_to_back(&myQueue, current);
+                foundS = true;
+				*r = previous.row;
+				*c = previous.col;
+                break;
+            }
+            // Guarda a casa anterior se for 0
+            
+            else if(LABIRINTO[current.col][current.row] == 0) {
+                predecessor[current.row][current.col].row = previous.row;
+				predecessor[current.row][current.col].col = previous.col;
+                visitado[current.row][current.col] = 1;
+                add_to_back(&myQueue, current);
+                current = previous;
+            }
+        }
+        // Tenta ir pro oeste
+        if((current.col - 1 < cols)
+            && (LABIRINTO[current.col - 1][current.row] != 2)
+            && (LABIRINTO[current.col - 1][current.row] != 1)
+            && (visitado[current.row][current.col - 1] == 0))
+        {
+            // Move para o oeste se valido
+            current.col = current.col - 1;
+            // Guarda a casa anterior se for 0
+            if((player_row == current.row) && (player_col == current.col)) {
+				// printf("oeste\n");
+				// printf("current.row = %d\n", current.row);
+				// printf("current.col = %d\n", current.col);
+				// printf("previous.row = %d\n", previous.row);
+				// printf("previous.col = %d\n", previous.col);
+                predecessor[current.row][current.col].row = previous.row;
+				predecessor[current.row][current.col].col = previous.col;
+				*r = previous.row;
+				*c = previous.col;
+				// printf("predecessor[current.row][current.col].row = %d\n", predecessor[current.row][current.col].row);
+				// printf("predecessor[current.row][current.col].col = %d\n", predecessor[current.row][current.col].col);
+                visitado[current.row][current.col] = 1;
+                add_to_back(&myQueue, current);
+                foundS = true;
+                break;
+            }
+            else if(LABIRINTO[current.col][current.row] == 0) {
+                predecessor[current.row][current.col].row = previous.row;
+				predecessor[current.row][current.col].col = previous.col;
+                visitado[current.row][current.col] = 1;
+                add_to_back(&myQueue, current);
+                current = previous;
+            }
+        }
+    }
+    if(SCount != 1) {
+        for(i = 0; i < rows; i++) {
+            free(visitado[i]);
+            // free(predecessor[i]);
+        }
+        free(visitado);
+        // free(predecessor);
+		// printf("RETORNOU 0");
+        return 0;
+    }
+	*r = predecessor[current.row][current.col].row;
+	*c = predecessor[current.row][current.col].col;
+
+	// predecessor[BOMBERMAN_POS_X][BOMBERMAN_POS_Y].row;
+	// for(i = 0; i < rows; i++) {
+	// 		for(j = 0; j < cols; j++) {
+	// 			if()
+	// 			printf("\npredecessor[i][j].row = %d\n",predecessor[i][j].row);
+	// 			printf("predecessor[i][j].col = %d\n",predecessor[i][j].col);
+	// 		}
+	// 	}
+	return 1;
+}   
